@@ -1,0 +1,27 @@
+{{define "content"}}
+<p>Hi,</p>
+<p>Thank you for signing up to Long Habit.</p>
+<p>Click on the button below to verify your email address.</p>
+<p>
+  <a
+    class="btn"
+    href="{{.domain}}/verify-email?token={{.token}}"
+    target="_blank"
+    rel="noopener"
+    >Verify</a
+  >
+</p>
+
+<p>
+  Alternatively, you can copy the token below to verify your email in the
+  browser.
+</p>
+<p>
+  <i>{{.token}}</i>
+</p>
+
+<p>
+  Thanks,<br />
+  Long Habit
+</p>
+{{ end }}

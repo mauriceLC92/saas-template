@@ -1,0 +1,23 @@
+services:
+  longhabit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DOMAIN_NAME=${DOMAIN_NAME}
+        - PLAUSIBLE_API_HOST=${PLAUSIBLE_API_HOST}
+    container_name: longhabit
+    restart: unless-stopped
+    environment:
+      - MAILER_CRON_SCHEDULE=${MAILER_CRON_SCHEDULE}
+    ports:
+      - '8090:8090'
+    volumes:
+      #- ./db:/app/db use this line for testing on localhost
+      - ../files/db:/app/db # required for deploying to Dokploy (../files/ location for persistent volumes)
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
+      start_period: 5s
+      interval: 15s
+      timeout: 15s
+      retries: 3

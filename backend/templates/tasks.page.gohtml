@@ -1,0 +1,33 @@
+{{define "content"}}
+<p>Hi,</p>
+
+<p>Please check the tasks below that need to be completed:</p>
+
+<ul class="reminders">
+  {{
+    range.reminders
+  }}
+  <li>{{.}}</li>
+  {{
+    end
+  }}
+</ul>
+
+<p>
+  <a class="btn" href="{{.domain}}/tasks" target="_blank" rel="noopener"
+    >Open Tasks</a
+  >
+</p>
+
+<p>
+  <i
+    >You are receiving these emails because you enabled email reminders. To stop
+    receiving them, disable email reminders in your account settings.</i
+  >
+</p>
+
+<p>
+  Thanks,<br />
+  Long Habit
+</p>
+{{ end }}

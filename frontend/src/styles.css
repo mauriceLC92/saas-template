@@ -1,0 +1,197 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-sans), sans-serif;
+  --font-mono: var(--font-mono), monospace;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --background-image-gradient-primary: var(--gradient-primary);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Inter';
+    src: url('/fonts/inter-regular.woff2') format('woff2');
+    font-weight: 100 900;
+    font-display: swap;
+    font-style: normal;
+  }
+
+  :root {
+    --font-sans: Inter;
+
+    --background: 275 1% 95%;
+    --foreground: 275 1% 10%;
+    --card: 275 1% 90%;
+    --card-foreground: 275 1% 15%;
+    --popover: 275 1% 90%;
+    --popover-foreground: 275 95% 10%;
+    --primary: 275 50% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 275 10% 75%;
+    --secondary-foreground: 0 0% 0%;
+    --muted: 240 10% 85%;
+    --muted-foreground: 275 1% 40%;
+    --accent: 240 10% 90%;
+    --accent-foreground: 275 1% 15%;
+    --destructive: 0 50% 50%;
+    --destructive-foreground: 275 1% 90%;
+    --border: 275 15% 90%;
+    --input: 275 15% 85%;
+    --ring: 275 25 85%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --font-sans: Inter;
+
+    --background: 275 5% 10%;
+    --foreground: 275 1% 80%;
+    --card: 275 1% 15%;
+    --card-foreground: 275 1% 90%;
+    --popover: 275 10% 15%;
+    --popover-foreground: 275 1% 90%;
+    --primary: 280 60% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 275 10% 20%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 10% 25%;
+    --muted-foreground: 275 1% 52%;
+    --accent: 240 10% 25%;
+    --accent-foreground: 275 1% 90%;
+    --destructive: 0 50% 50%;
+    --destructive-foreground: 275 1% 90%;
+    --border: 275 10% 17%;
+    --input: 275 15% 17;
+    --ring: 275 20 25%;
+    --radius: 0.5rem;
+
+    ::selection {
+      color: #fff;
+      background: #9933cc;
+    }
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  input::placeholder {
+    @apply select-none;
+  }
+
+  input[type='file']::-webkit-file-upload-button,
+  input[type='file']::file-selector-button {
+    @apply text-foreground;
+  }
+
+  .spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 50;
+    width: 50px;
+    --b: 8px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    padding: 1px;
+    background: conic-gradient(#0000 10%, hsl(var(--primary))) content-box;
+    -webkit-mask:
+      repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+      radial-gradient(
+        farthest-side,
+        #0000 calc(100% - var(--b) - 1px),
+        #000 calc(100% - var(--b))
+      );
+    mask:
+      repeating-conic-gradient(#0000 0deg, #000 1deg 20deg, #0000 21deg 36deg),
+      radial-gradient(
+        farthest-side,
+        #0000 calc(100% - var(--b) - 1px),
+        #000 calc(100% - var(--b))
+      );
+    -webkit-mask-composite: destination-in;
+    mask-composite: intersect;
+    animation: spin 1s infinite steps(10);
+  }
+
+  @keyframes spin {
+    to {
+      transform: translate(-50%, -50%) rotate(1turn);
+    }
+  }
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
