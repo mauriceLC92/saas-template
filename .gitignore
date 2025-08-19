@@ -7,7 +7,7 @@ backend/dist
 .vscode/*
 
 # Compiled binary
-longhabit
+saas-template
 
 # Database
 db

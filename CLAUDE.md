@@ -20,8 +20,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Backend Commands
 - `cd backend && go run . serve` - Start PocketBase server directly
-- `./longhabit serve` - Run compiled production binary
-- `./longhabit superuser upsert <email> <password>` - Create admin user for PocketBase dashboard
+- `./saas-template serve` - Run compiled production binary (binary name matches go.mod module)
+- `./saas-template superuser upsert <email> <password>` - Create admin user for PocketBase dashboard
 
 ### Docker & Deployment
 - `npm run compose` - Build and run with Docker Compose
@@ -29,7 +29,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a full-stack SaaS template built as a habit tracking application with PocketBase backend and React frontend.
+This is a full-stack SaaS template with PocketBase backend and React frontend. Originally based on a habit tracking application but designed as a reusable template for building any CRUD-based SaaS application.
 
 ### Backend Architecture (`/backend/`)
 - **PocketBase Framework**: Go-based backend using PocketBase v0.29 as a framework (not just database)
@@ -72,17 +72,20 @@ This is a full-stack SaaS template built as a habit tracking application with Po
 - **Route State**: TanStack Router manages route-level state and search params
 
 ### Build System
-- **Vite**: Fast development and optimized production builds
+- **Vite**: Fast development and optimized production builds with React Compiler support
 - **TypeScript**: Strict type checking with path aliases (`@/` -> `frontend/src/`)
 - **Bundle Splitting**: Manual chunks for data, forms, and UI libraries (see `vite.config.ts:20-58`)
 - **Embedded Assets**: Frontend builds to `backend/dist/` for embedding in Go binary
+- **Go Module**: Uses `github.com/mauriceLC92/saas-template` as module name (updated from original)
 
 ### Development Workflow
 1. Run `npm run dev` to start both frontend (port 5173) and backend (port 8090)
-2. Frontend proxies API requests to backend during development
+2. Frontend proxies API requests to backend during development  
 3. Access PocketBase admin at `http://localhost:8090/_/` for database management
 4. Import database schema from `backend/pb_schema.json` on first setup
 5. Use `npm run lint` before committing to ensure code quality
+6. Database files are stored in `/db` directory in project root
+7. Backend uses `--dir=../db` flag to specify database location during development
 
 ### Database Schema
 - Database schema is defined in `backend/pb_schema.json`
