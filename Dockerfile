@@ -8,8 +8,7 @@ RUN npm ci --frozen-lockfile
 COPY . .
 
 ARG DOMAIN_NAME
-ARG PLAUSIBLE_API_HOST
-RUN echo "VITE_DOMAIN=${DOMAIN_NAME}\nVITE_PLAUSIBLE_API_HOST=${PLAUSIBLE_API_HOST}" > .env
+RUN echo "VITE_DOMAIN=${DOMAIN_NAME}" > .env
 
 RUN npm run build:client
 

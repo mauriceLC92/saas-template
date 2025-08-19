@@ -67,7 +67,7 @@ This is a full-stack SaaS template built as a habit tracking application with Po
 
 ### State Management
 - **Server State**: TanStack Query handles all server communication and caching
-- **Client State**: React context for theme and Plausible analytics
+- **Client State**: React context for theme management
 - **Form State**: React Hook Form for complex forms with validation
 - **Route State**: TanStack Router manages route-level state and search params
 
@@ -150,7 +150,6 @@ Custom hooks should follow this pattern (`use-tasks.ts`):
 export default function useFeatureName() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { trackEvent } = usePlausible()
 
   // 1. Data queries using useSuspenseQuery
   const { data: items } = useSuspenseQuery(itemsQueryOptions)
@@ -160,7 +159,6 @@ export default function useFeatureName() {
     mutationFn: ({ id, data }) => createItemApi(id, data),
     
     onSuccess: (_, context) => {
-      trackEvent('item-created')
       successToast('Success message', `Detail: ${context.data.name}`)
       navigate({ to: '/target-route' })
     },
@@ -201,7 +199,6 @@ export default function useFeatureName() {
 
 **Hook Pattern Rules:**
 - Always use `useSuspenseQuery` for data fetching (enables Suspense boundaries)
-- Include analytics tracking in mutations (`trackEvent`)
 - Use consistent toast notifications (`successToast`, `errorToast`)
 - Navigate after successful mutations
 - Implement optimistic updates for better UX on updates

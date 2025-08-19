@@ -1,16 +1,8 @@
 import { Button } from '@/components/ui/button'
-import { usePlausible } from '@/context/plausible-context'
-import { useLocation, useRouter } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useRouter } from '@tanstack/react-router'
 
 export default function NotFoundPage() {
   const { history } = useRouter()
-  const location = useLocation()
-  const { trackEvent } = usePlausible()
-
-  useEffect(() => {
-    trackEvent('404', { props: { path: location.pathname } })
-  }, [])
 
   return (
     <main className='flex flex-col items-center gap-y-4 text-center'>

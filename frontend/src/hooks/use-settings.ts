@@ -1,4 +1,3 @@
-import { usePlausible } from '@/context/plausible-context'
 import { errorToast, successToast } from '@/lib/toast'
 import { UpdateUserSettingsFields } from '@/schemas/user-schema'
 import { userQueryOptions } from '@/services/api-auth'
@@ -13,7 +12,6 @@ import { useNavigate } from '@tanstack/react-router'
 export default function useSettings() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { trackEvent } = usePlausible()
   const { data, isLoading } = useSuspenseQuery(userQueryOptions)
 
   const { name, id: userId, settings, authWithPasswordAvailable } = data ?? {}
@@ -49,7 +47,6 @@ export default function useSettings() {
     },
 
     onSuccess: () => {
-      trackEvent('settings-update')
       successToast('Success!', 'Account details were updated successfully')
       navigate({ to: '/tasks' })
     },

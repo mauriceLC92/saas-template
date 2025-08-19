@@ -1,7 +1,8 @@
-app = "longhabit"
+app = "saas-template"
 primary_region = "ord"
 
 [build]
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "8090"
@@ -15,11 +16,11 @@ primary_region = "ord"
   min_machines_running = 0
   processes = ["app"]
 
-  [http_service.checks]
-    interval = "10s"
-    timeout = "2s"
-    method = "GET"
-    path = "/api/health"
+[[http_service.checks]]
+  interval = "10s"
+  timeout = "2s"
+  method = "GET"
+  path = "/api/health"
 
 [[vm]]
   memory = "1gb"
@@ -29,6 +30,6 @@ primary_region = "ord"
 [[mounts]]
   source = "pocketbase_data"
   destination = "/app/pb_data"
-  initial_size = "10gb"
 
 [deploy]
+  strategy = "rolling"
