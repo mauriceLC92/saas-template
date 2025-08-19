@@ -1,105 +1,259 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<a href="https://longhabit.com"><img src="https://longhabit.com/og-image.png" /></a>
+# SaaS Template
 
+A production-ready, white-label SaaS template built with PocketBase and React. This template is based on the excellent [longhabit](https://github.com/s-petr/longhabit) project and has been refactored into a reusable template that you can easily customize for your own SaaS applications.
 
+## Why Use This Template?
 
-# Long Habit
+This template provides a solid foundation for building modern SaaS applications with:
 
-Long Habit is a simple CRUD application for tracking long-term habits and recurring tasks. It is a production-ready full-stack project built using PocketBase and React. This is a comprehensive example of integrating PocketBase into a larger Go project and combining it with a modern React frontend using best practices. The application is very simple and can be used as a template for starting new projects. Most of the boilerplate setup has been taken care of and common issues have been identified and fixed.
+- **Full-stack architecture** - Complete backend and frontend integration
+- **Production-ready** - Includes authentication, database, email templates, and deployment configs
+- **Modern tech stack** - React 19, TypeScript, PocketBase, TailwindCSS
+- **Best practices** - Established patterns for components, forms, API services, and state management
+- **Developer experience** - Hot reload, linting, type safety, and comprehensive documentation
 
-Try the live version: https://longhabit.com
+Perfect for entrepreneurs, indie hackers, or development teams who want to skip the boilerplate and focus on building their unique features.
 
 ## Key Features
 
 ### Backend Architecture
-- Running the latest version of Pocketbase (v0.29).
-- Single-binary build. Uses Go's "embed" package to embed the React front-end as a file system inside the compiled binary.
-- PocketBase is installed as a Go package and used as a framework. The project makes use of many extension features including:
-  - Custom hooks and middleware
-  - Route binding
-  - Database operations
-  - Scheduled tasks with cron
-  - HTML email templates
-  - Custom logging configuration
-- Worker pool implementation for bulk email processing done using the Pond library
-- Idiomatic Go code organization with clean separation of concerns
+- **PocketBase v0.29** - Modern Go-based backend framework with built-in admin dashboard
+- **Single binary deployment** - Frontend embedded in Go binary for easy deployment
+- **Custom extensions** - Hooks, middleware, custom routes, and scheduled tasks
+- **Email system** - Worker pool implementation for bulk email processing
+- **Database** - SQLite with PocketBase's ORM layer and real-time subscriptions
 
 ### Frontend Implementation
-- Modern React setup with TypeScript and Vite.
-- Built for React 19. Works with React Compiler enabled.
-- TailwindCSS with ShadCN UI fully configured with a custom theme.
-- Responsive design using all the best practices. Supports light and dark mode. Tested on desktop and mobile screens.
-- Complete authentication flow with customized forms. Works with email + password auth as well as Google OAuth.
-- TanStack Router configured using best practices. All the authentication logic and data fetching happens in the router before the pages are loaded. Dynamic page title switching based on route.
-- TanStack Query fully integrated with PocketBase and TanStack Router. Fresh data is fetched from the backend and loaded before the routes are rendered. TanStack Query takes care of data fetching and ensures that client-side state is up to date with server-side data.
-- Loading states are implemented using the new React Suspense boundaries. 
-- Dynamic forms with validation and error messages implemented using React Hook Form and Zod.
-- SEO optimizations like meta description and social media cards meta tags added to root HTML page, sitemap.xml and robots.txt added and configured. Exclude rule for the PocketBase admin "/_" URL added to prevent it from being indexed by crawlers.
+- **React 19** - Latest React with React Compiler enabled for optimal performance
+- **TypeScript** - Full type safety with strict configuration
+- **TanStack Router** - File-based routing with authentication guards and data pre-loading
+- **TanStack Query** - Server state management with optimistic updates
+- **shadcn/ui + TailwindCSS** - Modern, accessible UI components with dark/light mode
+- **React Hook Form + Zod** - Type-safe forms with validation
+- **Responsive design** - Mobile-first approach with comprehensive breakpoints
 
 ### Developer Experience
-- Vite dev mode with hot reload works seamlessly with PocketBase. No need to wait for PocketBase to compile. Vite and PocketBase proxy requests to and from each other while running on different ports.
-- Fully working ESlint configuration written in the new ESlint 9 format. Includes all the relevant plugins for React, Tailwind and Prettier. 
-- Single-command production builds.
-- Run project locally in Docker Compose without additional configuration.
-- Compatible with any Node.js runtime (default: Bun).
-
-### Deployment
-- Compile into a single executable binary or deploy using Docker containers.
-- Fully containerized, all the build steps happen in a multi-stage Dockerfile. Outputs a slim Alpine container that contains only the compiled binary.
-- Docker Compose deployment that works out of the box. Working health check endpoint included.
-- Ready for deployment on Dokploy, Coolify and similar platforms.
+- **Hot reload** - Vite dev server with PocketBase proxy integration
+- **Code quality** - ESLint 9, Prettier, TypeScript strict mode
+- **Build optimization** - Manual chunk splitting and bundle optimization
+- **Docker support** - Multi-stage builds with slim Alpine containers
+- **Single command deployment** - Build both frontend and backend together
 
 ## Tech Stack
 
 - **Frontend**
-  - [TypeScript](https://www.typescriptlang.org/docs/) - Frontend language
-  - [React 19](https://react.dev/blog/2024/04/25/react-19) - Frontend framework
-  - [Vite](https://vite.dev/guide/) - Build tool
-  - [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview) - Router
-  - [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview) - Data fetching and state management
-  - [TanStack Table](https://tanstack.com/table/latest/docs/introduction) - Table / data grid library
-  - [React Hook Form](https://www.react-hook-form.com/api/) - Forms library for React
-  - [shadcn/ui](https://ui.shadcn.com/docs) - React component library based on TailwindCSS and Radix UI
-  - [TailwindCSS](https://tailwindcss.com/docs/installation) - Utility-first CSS framework
-  - [Zod](https://zod.dev/?id=table-of-contents) - Typescript schema validation
-  - [Date-fns](https://date-fns.org/docs/Getting-Started) - Date manipulation library
+  - [React 19](https://react.dev/blog/2024/04/25/react-19) - UI framework with React Compiler
+  - [TypeScript](https://www.typescriptlang.org/) - Type safety
+  - [Vite](https://vite.dev/guide/) - Build tool and dev server
+  - [TanStack Router](https://tanstack.com/router/latest) - Type-safe routing
+  - [TanStack Query](https://tanstack.com/query/latest) - Server state management
+  - [TanStack Table](https://tanstack.com/table/latest) - Data grids
+  - [shadcn/ui](https://ui.shadcn.com/) - UI component library
+  - [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS
+  - [React Hook Form](https://react-hook-form.com/) - Form management
+  - [Zod](https://zod.dev/) - Schema validation
+
 - **Backend**
-  - [Go](https://go.dev/doc/) - Backend language
-  - [PocketBase](https://pocketbase.io/docs/) - Backend framework
-  - [Pond](https://github.com/alitto/pond) - Worker pool implementation in Go
+  - [Go 1.24+](https://go.dev/) - Backend language
+  - [PocketBase](https://pocketbase.io/) - Backend framework and database
+  - [Pond](https://github.com/alitto/pond) - Worker pool implementation
+
 - **Deployment**
-  - [Docker](https://docs.docker.com/reference/) - Containerization tool
-  - [Dokploy](https://dokploy.com) - Open source hosting platform
+  - [Docker](https://docs.docker.com/) - Containerization
+  - Single binary deployment option
+  - Multi-stage Dockerfile with Alpine Linux
 
 ## Getting Started
 
 ### Prerequisites
 - Go 1.24+
-- Node.js 22+ or Bun
+- Node.js 22+ (or Bun)
 - Docker (optional)
 
-### Installation
+### Quick Start
 
-- Clone the repository `git clone https://github.com/s-petr/longhabit`
-- Install dependencies `npm install` or `bun install`.
-- Create a new superuser (admin) account for the Pocketbase admin dashboard. First compile the binary `npm run build` or `bun run build`. Then run the command `./longhabit superuser upsert {{admin email}} {{admin password}}`
-- Once the PocketBase backend is up and running you need to set up the database tables. Log in to the Pocketbase dashboard `http://localhost:8090/_/` using your superuser credentials. Go to Settings -> Import collections -> Load from JSON file. Select file [backend/pb_schema.json](backend/pb_schema.json) and import it.
-- In order for the "Sign in with Google" button to work you need to register with Google Cloud and get Google OAuth 2.0 API credentials (you can follow this [guide](https://support.google.com/googleapi/answer/6158849?hl=en)). After you get the credentials, go to the Pocketbase dashboard Collections -> Users -> Edit collection -> OAuth2 -> Add provider -> Google. Enter your Client ID and Client Secret and save.
-- A folder `/db` will be created in the root directory. This will contain the database files. Docker Compose has been configured with a volume to read/write data to the same folder. You may need to adjust file permissions for this folder if PocketBase cannot write to it from the Docker container.
+1. **Clone the template**
+   ```bash
+   git clone https://github.com/mauriceLC92/saas-template
+   cd saas-template
+   ```
 
-### Local Development
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   bun install
+   ```
 
-- Start development servers `npm run dev` or `bun run dev`
- 
-### Production Build
+3. **Build and setup admin user**
+   ```bash
+   npm run build
+   ./saas-template superuser upsert admin@example.com yourpassword
+   ```
 
-- Build frontend and backend `npm run build` or `bun run build`
-- Run the compiled binary `npm run preview` or `bun run preview`
+4. **Import database schema**
+   - Start the server: `npm run dev`
+   - Go to PocketBase admin: http://localhost:8090/_/
+   - Login with your admin credentials
+   - Navigate to Settings → Import collections → Load from JSON file
+   - Select `backend/pb_schema.json` and import
 
-### Docker Deployment
-- Build and run with Docker Compose `npm run compose` or `bun run compose`
+5. **Start developing**
+   ```bash
+   npm run dev
+   ```
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:8090
+   - PocketBase Admin: http://localhost:8090/_/
+
+### Development Commands
+
+```bash
+# Development
+npm run dev              # Start both frontend and backend
+npm run dev:client       # Start only frontend (Vite)
+npm run dev:server       # Start only backend (PocketBase)
+
+# Building
+npm run build            # Build both frontend and backend
+npm run build:client     # Build only frontend
+npm run build:server     # Build only backend
+npm run preview          # Run production build locally
+
+# Code Quality
+npm run lint             # TypeScript check + ESLint
+npm run pretty           # Format code with Prettier
+
+# Deployment
+npm run compose          # Build and run with Docker Compose
+```
+
+## Customizing for Your SaaS
+
+### 1. Update Project Metadata
+
+Edit `package.json`:
+```json
+{
+  "name": "your-saas-name",
+  "description": "Your SaaS description",
+  "author": {
+    "name": "Your Name",
+    "github": "your-github"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/your-repo"
+  },
+  "homepage": "https://your-saas.com"
+}
+```
+
+### 2. Update Go Module
+
+Edit `backend/go.mod`:
+```go
+module github.com/your-username/your-saas
+
+go 1.24.0
+// ... rest of dependencies
+```
+
+Update import in `backend/mailer.go`:
+```go
+import "github.com/your-username/your-saas/notifier"
+```
+
+### 3. Customize Database Schema
+
+- Modify `backend/pb_schema.json` to match your data model
+- Or start fresh and create collections via the PocketBase admin UI
+- Export your schema: Settings → Export collections → Download as JSON
+
+### 4. Update Branding and Content
+
+- Replace `frontend/public/` assets (logos, favicons, og-image.png)
+- Update `index.html` meta tags and title
+- Modify email templates in `backend/templates/`
+- Update component text and labels throughout `frontend/src/`
+
+### 5. Configure Authentication
+
+For Google OAuth (optional):
+- Get Google OAuth 2.0 credentials from [Google Cloud Console](https://console.cloud.google.com/)
+- In PocketBase admin: Collections → Users → Edit → OAuth2 → Add Google provider
+- Add your Client ID and Client Secret
+
+### 6. Environment Variables
+
+Create `.env.local` for development:
+```env
+VITE_BACKEND_URL=http://localhost:8090
+```
+
+### 7. Deployment Configuration
+
+Update `docker-compose.yml`, `Dockerfile`, or deployment configs as needed for your hosting platform.
+
+## Architecture Overview
+
+This template follows established patterns documented in `CLAUDE.md`:
+
+- **Pages**: Thin components that delegate logic to hooks
+- **Hooks**: Custom hooks for data fetching and mutations using TanStack Query
+- **Services**: API layer with Zod validation and query options
+- **Components**: Reusable UI components with consistent patterns
+- **Forms**: React Hook Form + Zod with reusable field components
+- **Schemas**: Zod schemas for type safety and validation
+
+## Production Deployment
+
+### Single Binary
+```bash
+npm run build
+./saas-template serve
+```
+
+### Docker
+```bash
+# Development
+npm run compose
+
+# Production
+docker build -t your-saas .
+docker run -p 8090:8090 your-saas
+```
+
+### Environment Setup
+- Database files are stored in `/db` directory
+- Ensure proper file permissions for PocketBase to write to database directory
+- Configure your domain in PocketBase admin for email links and OAuth
+
+## Contributing
+
+This template is designed to be forked and customized. If you make improvements that would benefit the template itself (not your specific SaaS), feel free to contribute back:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+MIT License - see [LICENSE.md](LICENSE.md) for details.
+
+## Credits
+
+Based on the excellent [longhabit](https://github.com/s-petr/longhabit) project by [Sergei Petrov](https://github.com/s-petr). This template extracts and generalizes the solid architectural patterns from that project into a reusable SaaS foundation.
+
+## Support
+
+- 📖 [Full Documentation](CLAUDE.md) - Comprehensive development guide
+- 🐛 [Issues](https://github.com/mauriceLC92/saas-template/issues) - Bug reports and feature requests
+- 💡 [Discussions](https://github.com/mauriceLC92/saas-template/discussions) - Questions and community support
+
+---
+
+**Ready to build your SaaS?** Clone this template and start customizing! 🚀
