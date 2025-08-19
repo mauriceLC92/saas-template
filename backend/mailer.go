@@ -3,10 +3,10 @@ package main
 import (
 	"embed"
 
+	"github.com/mauriceLC92/saas-template/notifier"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/cron"
 	"github.com/pocketbase/pocketbase/tools/template"
-	"github.com/s-petr/longhabit/notifier"
 )
 
 //go:embed templates

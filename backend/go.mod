@@ -1,4 +1,4 @@
-module github.com/s-petr/longhabit
+module github.com/mauriceLC92/saas-template
 
 go 1.24.0
 
