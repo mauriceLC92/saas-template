@@ -18,7 +18,7 @@ export default function Footer() {
             target='_blank'
             rel='noreferrer'
             className='flex items-center justify-center hover:underline'
-            href='https://github.com/s-petr/longhabit'>
+            href='https://github.com/mauriceLC92/saas-template'>
             <GitHubLogoIcon className='mr-1' />
             Source Code
           </a>

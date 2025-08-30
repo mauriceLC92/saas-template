@@ -51,7 +51,7 @@ export default function PrivacyPolicyPage() {
           <li>
             <strong>Company</strong> (referred to as either &quot;the
             Company&quot;, &quot;We&quot;, &quot;Us&quot; or &quot;Our&quot; in
-            this Agreement) refers to Long Habit.
+            this Agreement) refers to Saas Template.
           </li>
           <li>
             <strong>Cookies</strong> are small files that are placed on Your
@@ -84,9 +84,9 @@ export default function PrivacyPolicyPage() {
             infrastructure itself (for example, the duration of a page visit).
           </li>
           <li>
-            <strong>Website</strong> refers to Long Habit, accessible from{' '}
-            <a href='https://longhabit.com' rel='noreferrer' target='_blank'>
-              https://longhabit.com
+            <strong>Website</strong> refers to Saas Template, accessible from{' '}
+            <a href='https://saas-template.com' rel='noreferrer' target='_blank'>
+              https://saas-template.com
             </a>
           </li>
           <li>

@@ -21,7 +21,7 @@ export default function HomePage() {
             href='https://jamesclear.com/atomic-habits'>
             Atomic Habits
           </a>
-          , Long Habit makes managing recurring tasks straightforward and
+          , Saas Template makes managing recurring tasks straightforward and
           enjoyable, helping you build lasting routines with ease.
         </p>
       </section>

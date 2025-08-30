@@ -10,4 +10,4 @@ Disallow: /tasks/*
 Disallow: /settings
 Disallow: /_
 
-Sitemap: https://longhabit.com/sitemap.xml
+Sitemap: https://saas-template.com/sitemap.xml

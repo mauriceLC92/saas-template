@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY --from=builder-node /app/backend .
 RUN go mod download
-RUN CGO_ENABLED=0 go build -tags production -o longhabit
+RUN CGO_ENABLED=0 go build -tags production -o saas-template
 
 # Deploy binary
 FROM alpine:latest AS runner
@@ -27,9 +27,9 @@ WORKDIR /app
 # Create directory for PocketBase data
 RUN mkdir -p /app/pb_data
 
-COPY --from=builder-go /app/longhabit .
-RUN chmod +x /app/longhabit
+COPY --from=builder-go /app/saas-template .
+RUN chmod +x /app/saas-template
 
 EXPOSE 8090
 
-CMD ["/app/longhabit", "serve", "--http=0.0.0.0:8090"]
+CMD ["/app/saas-template", "serve", "--http=0.0.0.0:8090"]

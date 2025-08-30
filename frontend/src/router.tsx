@@ -78,7 +78,7 @@ const rootRoute = createRootRouteWithContext<RootContext>()({
   beforeLoad: async ({ context: { queryClient } }) => {
     const user = queryClient.getQueryData(userQueryOptions.queryKey)
     setTheme(user?.settings?.theme)
-    return { getTitle: () => 'Long Habit' }
+    return { getTitle: () => 'Saas Template' }
   }
 })
 

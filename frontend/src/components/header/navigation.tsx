@@ -1,7 +1,7 @@
 import { Avatar, AvatarImage } from '@/components/ui/avatar'
 import useAuth from '@/hooks/use-auth'
 import { Link, useLocation } from '@tanstack/react-router'
-import { DefaultUserAvatarLogo, LongHabitMainLogo } from '../shared/logos'
+import { DefaultUserAvatarLogo, SaasTemplateMainLogo } from '../shared/logos'
 
 export default function Navigation() {
   const { user } = useAuth()
@@ -11,7 +11,7 @@ export default function Navigation() {
   return (
     <nav className='flex items-center justify-between'>
       <Link to='/' className='focus:outline-hidden'>
-        <LongHabitMainLogo />
+        <SaasTemplateMainLogo />
       </Link>
       <Link
         aria-label='user account or log in'

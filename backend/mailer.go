@@ -41,7 +41,7 @@ func (app *application) startNotifier() {
 // and "login from a new location" alert emails.
 func (app *application) loadAuthEmailTemplates() {
 	app.pb.OnMailerRecordVerificationSend().BindFunc(func(e *core.MailerRecordEvent) error {
-		title := "Long Habit - Verify Email"
+		title := "Saas Template - Verify Email"
 
 		registry := template.NewRegistry()
 		html, err := registry.LoadFS(embeddedTemplates,
@@ -64,7 +64,7 @@ func (app *application) loadAuthEmailTemplates() {
 	})
 
 	app.pb.OnMailerRecordPasswordResetSend().BindFunc(func(e *core.MailerRecordEvent) error {
-		title := "Long Habit - Reset Password"
+		title := "Saas Template - Reset Password"
 
 		registry := template.NewRegistry()
 		html, err := registry.LoadFS(embeddedTemplates,
@@ -87,7 +87,7 @@ func (app *application) loadAuthEmailTemplates() {
 	})
 
 	app.pb.OnMailerRecordAuthAlertSend().BindFunc(func(e *core.MailerRecordEvent) error {
-		title := "Long Habit - Login from a new location"
+		title := "Saas Template - Login from a new location"
 
 		registry := template.NewRegistry()
 		html, err := registry.LoadFS(embeddedTemplates,

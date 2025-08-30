@@ -1,11 +1,11 @@
 services:
-  longhabit:
+  saas-template:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         - DOMAIN_NAME=${DOMAIN_NAME}
-    container_name: longhabit
+    container_name: saas-template
     restart: unless-stopped
     environment:
       - MAILER_CRON_SCHEDULE=${MAILER_CRON_SCHEDULE}
