@@ -19,7 +19,7 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
 ## Key Features
 
 ### Backend Architecture
-- **PocketBase v0.29** - Modern Go-based backend framework with built-in admin dashboard
+- **PocketBase v0.34** - Modern Go-based backend framework with built-in admin dashboard
 - **Single binary deployment** - Frontend embedded in Go binary for easy deployment
 - **Custom extensions** - Hooks, middleware, custom routes, and scheduled tasks
 - **Email system** - Worker pool implementation for bulk email processing
@@ -56,7 +56,7 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
   - [Zod](https://zod.dev/) - Schema validation
 
 - **Backend**
-  - [Go 1.24+](https://go.dev/) - Backend language
+  - [Go 1.25+](https://go.dev/) - Backend language
   - [PocketBase](https://pocketbase.io/) - Backend framework and database
   - [Pond](https://github.com/alitto/pond) - Worker pool implementation
 
@@ -68,8 +68,8 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
 ## Getting Started
 
 ### Prerequisites
-- Go 1.24+
-- Node.js 22+ (or Bun)
+- Go 1.25+
+- Node.js 24+ (or Bun)
 - Docker (optional)
 
 ### Quick Start
