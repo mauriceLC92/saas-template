@@ -113,6 +113,18 @@ jobs:
           chmod +x .github/scripts/generate-pr-description.sh
           .github/scripts/generate-pr-description.sh "${{ steps.sync.outputs.changed_files }}"
 
+      - name: Ensure PR labels exist
+        if: steps.sync.outputs.has_changes == 'true'
+        run: |
+          LABELS=("dependencies" "automated")
+          for label in "${LABELS[@]}"; do
+            if ! gh label list --json name --jq '.[].name' | grep -Fx "$label" >/dev/null; then
+              gh label create "$label" --color "0e8a16" --description "Automated dependency sync"
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Create Pull Request
         if: steps.sync.outputs.has_changes == 'true' && steps.check-pr.outputs.existing_pr == ''
         id: create-pr

@@ -194,6 +194,359 @@ NODE
   return 1
 }
 
+# Sync overlapping ESLint config entries (keep local-only customizations)
+sync_eslint_config_overlap() {
+  local upstream_file="$1"
+  local local_file="$2"
+
+  if [ ! -f "$upstream_file" ]; then
+    echo "  ⚠️  Warning: Upstream eslint.config.mjs not available"
+    return 1
+  fi
+
+  if [ ! -f "$local_file" ]; then
+    echo "  ⚠️  Warning: Local file $local_file does not exist"
+    return 1
+  fi
+
+  if ! command -v node >/dev/null 2>&1; then
+    echo "  ⚠️  Warning: node is not available to sync eslint.config.mjs"
+    return 1
+  fi
+
+  local changed
+  changed=$(node <<'NODE' "$upstream_file" "$local_file"
+const fs = require('fs')
+const [,, upstreamPath, localPath] = process.argv
+const upstreamText = fs.readFileSync(upstreamPath, 'utf8')
+const localText = fs.readFileSync(localPath, 'utf8')
+
+function findBlock(text, key) {
+  const regex = new RegExp(`\\b${key}\\s*:`)
+  const match = regex.exec(text)
+  if (!match) return null
+  const keyIndex = match.index
+  const braceStart = text.indexOf('{', keyIndex)
+  if (braceStart === -1) return null
+  const end = findMatchingBrace(text, braceStart)
+  if (end === -1) return null
+  return { keyIndex, start: braceStart, end }
+}
+
+function findMatchingBrace(text, start) {
+  let depth = 0
+  let inString = false
+  let stringChar = ''
+  let inTemplate = false
+  let inSingleLine = false
+  let inMultiLine = false
+
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i]
+    const next = text[i + 1]
+
+    if (inSingleLine) {
+      if (ch === '\n') inSingleLine = false
+      continue
+    }
+    if (inMultiLine) {
+      if (ch === '*' && next === '/') {
+        inMultiLine = false
+        i += 1
+      }
+      continue
+    }
+    if (inString) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === stringChar) inString = false
+      continue
+    }
+    if (inTemplate) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === '`') inTemplate = false
+      continue
+    }
+
+    if (ch === '/' && next === '/') {
+      inSingleLine = true
+      i += 1
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      inMultiLine = true
+      i += 1
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true
+      stringChar = ch
+      continue
+    }
+    if (ch === '`') {
+      inTemplate = true
+      continue
+    }
+
+    if (ch === '{') depth += 1
+    if (ch === '}') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+  }
+
+  return -1
+}
+
+function splitEntries(objText) {
+  const entries = []
+  let start = 0
+  let depth = 0
+  let inString = false
+  let stringChar = ''
+  let inTemplate = false
+  let inSingleLine = false
+  let inMultiLine = false
+
+  for (let i = 0; i < objText.length; i += 1) {
+    const ch = objText[i]
+    const next = objText[i + 1]
+
+    if (inSingleLine) {
+      if (ch === '\n') inSingleLine = false
+      continue
+    }
+    if (inMultiLine) {
+      if (ch === '*' && next === '/') {
+        inMultiLine = false
+        i += 1
+      }
+      continue
+    }
+    if (inString) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === stringChar) inString = false
+      continue
+    }
+    if (inTemplate) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === '`') inTemplate = false
+      continue
+    }
+
+    if (ch === '/' && next === '/') {
+      inSingleLine = true
+      i += 1
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      inMultiLine = true
+      i += 1
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true
+      stringChar = ch
+      continue
+    }
+    if (ch === '`') {
+      inTemplate = true
+      continue
+    }
+
+    if (ch === '{' || ch === '[' || ch === '(') depth += 1
+    if (ch === '}' || ch === ']' || ch === ')') depth -= 1
+
+    if (ch === ',' && depth === 0) {
+      const entry = objText.slice(start, i).trim()
+      if (entry) entries.push(entry)
+      start = i + 1
+    }
+  }
+
+  const last = objText.slice(start).trim()
+  if (last) entries.push(last)
+  return entries
+}
+
+function getEntryKey(entry) {
+  const trimmed = entry.trim()
+  if (trimmed.startsWith('...')) return null
+
+  let depth = 0
+  let inString = false
+  let stringChar = ''
+  let inTemplate = false
+
+  for (let i = 0; i < trimmed.length; i += 1) {
+    const ch = trimmed[i]
+    const next = trimmed[i + 1]
+
+    if (inString) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === stringChar) inString = false
+      continue
+    }
+    if (inTemplate) {
+      if (ch === '\\') {
+        i += 1
+        continue
+      }
+      if (ch === '`') inTemplate = false
+      continue
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true
+      stringChar = ch
+      continue
+    }
+    if (ch === '`') {
+      inTemplate = true
+      continue
+    }
+    if (ch === '{' || ch === '[' || ch === '(') depth += 1
+    if (ch === '}' || ch === ']' || ch === ')') depth -= 1
+
+    if (ch === ':' && depth === 0) {
+      const keyPart = trimmed.slice(0, i).trim()
+      return normalizeKey(keyPart)
+    }
+
+    if (ch === '/' && next === '*') {
+      i += 1
+      while (i < trimmed.length && !(trimmed[i] === '*' && trimmed[i + 1] === '/')) i += 1
+      i += 1
+      continue
+    }
+    if (ch === '/' && next === '/') {
+      break
+    }
+  }
+
+  return null
+}
+
+function normalizeKey(keyPart) {
+  if (!keyPart) return null
+  const trimmed = keyPart.trim()
+  const quote = trimmed[0]
+  if ((quote === "'" || quote === '"') && trimmed[trimmed.length - 1] === quote) {
+    return trimmed.slice(1, -1)
+  }
+  return trimmed
+}
+
+function normalizeIndent(entry) {
+  const lines = entry.replace(/\s+$/, '').split('\n')
+  const nonEmpty = lines.filter((line) => line.trim().length > 0)
+  if (nonEmpty.length === 0) return entry.trim()
+  const minIndent = Math.min(...nonEmpty.map((line) => line.match(/^\s*/)[0].length))
+  const trimmed = lines.map((line) => line.slice(minIndent)).join('\n')
+  return trimmed.trim()
+}
+
+function formatEntry(entry, indent) {
+  const normalized = normalizeIndent(entry)
+  const lines = normalized.split('\n')
+  return lines.map((line) => (line.length ? indent + line : line)).join('\n')
+}
+
+function normalizeEntry(entry) {
+  return entry.replace(/\s+/g, ' ').trim()
+}
+
+function getIndent(text, index) {
+  const lineStart = text.lastIndexOf('\n', index)
+  const start = lineStart === -1 ? 0 : lineStart + 1
+  const line = text.slice(start, index)
+  const match = line.match(/^\s*/)
+  return match ? match[0] : ''
+}
+
+function mergeBlock(currentText, upstreamText, key) {
+  const localBlock = findBlock(currentText, key)
+  const upstreamBlock = findBlock(upstreamText, key)
+  if (!localBlock || !upstreamBlock) {
+    return { text: currentText, changed: false }
+  }
+
+  const localObj = currentText.slice(localBlock.start + 1, localBlock.end)
+  const upstreamObj = upstreamText.slice(upstreamBlock.start + 1, upstreamBlock.end)
+
+  const localEntries = splitEntries(localObj)
+  const upstreamEntries = splitEntries(upstreamObj)
+  const upstreamMap = new Map()
+  upstreamEntries.forEach((entry) => {
+    const key = getEntryKey(entry)
+    if (key) upstreamMap.set(key, entry)
+  })
+
+  let changed = false
+  const mergedEntries = localEntries.map((entry) => {
+    const entryKey = getEntryKey(entry)
+    if (entryKey && upstreamMap.has(entryKey)) {
+      const upstreamEntry = upstreamMap.get(entryKey)
+      if (normalizeEntry(entry) !== normalizeEntry(upstreamEntry)) {
+        changed = true
+      }
+      return upstreamEntry
+    }
+    return entry
+  })
+
+  if (!changed) {
+    return { text: currentText, changed: false }
+  }
+
+  const indent = getIndent(currentText, localBlock.keyIndex)
+  const entryIndent = indent + '  '
+  const formattedEntries = mergedEntries.map((entry) => formatEntry(entry, entryIndent)).join(',\n')
+  const rebuilt = `\n${formattedEntries}\n${indent}`
+  const updatedText = currentText.slice(0, localBlock.start + 1) + rebuilt + currentText.slice(localBlock.end)
+
+  return { text: updatedText, changed: true }
+}
+
+let resultText = localText
+let anyChanged = false
+for (const key of ['plugins', 'rules']) {
+  const result = mergeBlock(resultText, upstreamText, key)
+  resultText = result.text
+  if (result.changed) anyChanged = true
+}
+
+if (anyChanged) {
+  fs.writeFileSync(localPath, resultText)
+}
+
+process.stdout.write(anyChanged ? 'true' : 'false')
+NODE
+)
+
+  if [ "$changed" = "true" ]; then
+    echo "  📝 eslint.config.mjs: Overlapping config entries updated"
+    return 0
+  fi
+
+  echo "  ✓ eslint.config.mjs: No overlapping config changes"
+  return 1
+}
+
 # Check each file for changes
 for file_mapping in "${FILES[@]}"; do
   IFS=':' read -r upstream_path local_path <<< "$file_mapping"
@@ -228,6 +581,14 @@ for file_mapping in "${FILES[@]}"; do
 
   if [ "$local_path" = "package.json" ]; then
     if sync_package_json_versions "$upstream_file" "$local_path"; then
+      CHANGED_FILES+=("$local_path")
+      HAS_CHANGES=true
+    fi
+    continue
+  fi
+
+  if [ "$local_path" = "eslint.config.mjs" ]; then
+    if sync_eslint_config_overlap "$upstream_file" "$local_path"; then
       CHANGED_FILES+=("$local_path")
       HAS_CHANGES=true
     fi
