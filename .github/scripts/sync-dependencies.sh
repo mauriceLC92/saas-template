@@ -32,9 +32,10 @@ sync_readme_versions() {
 
   # Extract version requirement lines from upstream README
   # Looking for lines like: "- Go 1.25+" "- Node.js 24+" "- **PocketBase v0.34**"
-
-  # Fetch upstream README
-  curl -s "${BASE_URL}/README.md" > "${upstream_file}"
+  if [ ! -f "$upstream_file" ]; then
+    echo "  ⚠️  Warning: Upstream README not available"
+    return 1
+  fi
 
   # Extract the prerequisites section and tech stack versions
   local go_version=$(grep -E "Go [0-9]+\.[0-9]+\+" "${upstream_file}" | head -1 || echo "")
@@ -75,6 +76,124 @@ sync_readme_versions() {
   fi
 }
 
+# Parse require directives from go.mod as "module version"
+parse_go_mod_requires() {
+  local file="$1"
+  awk '
+    $1 == "require" && $2 != "(" { print $2, $3; next }
+    $1 == "require" && $2 == "(" { inreq = 1; next }
+    inreq && $1 == ")" { inreq = 0; next }
+    inreq { print $1, $2 }
+  ' "$file"
+}
+
+# Sync only overlapping Go dependency versions (leave module path and extras intact)
+sync_go_mod_versions() {
+  local upstream_file="$1"
+  local local_file="$2"
+
+  if [ ! -f "$upstream_file" ]; then
+    echo "  ⚠️  Warning: Upstream go.mod not available"
+    return 1
+  fi
+
+  if [ ! -f "$local_file" ]; then
+    echo "  ⚠️  Warning: Local file $local_file does not exist"
+    return 1
+  fi
+
+  declare -A upstream_versions=()
+  while read -r module version; do
+    if [ -n "${module:-}" ] && [ -n "${version:-}" ]; then
+      upstream_versions["$module"]="$version"
+    fi
+  done < <(parse_go_mod_requires "$upstream_file")
+
+  local changed=false
+  local local_dir
+  local_dir=$(dirname "$local_file")
+
+  while read -r module version; do
+    if [ -z "${module:-}" ] || [ -z "${version:-}" ]; then
+      continue
+    fi
+
+    if [ -n "${upstream_versions[$module]+set}" ] && [ "${upstream_versions[$module]}" != "$version" ]; then
+      echo "  📝 $module: $version -> ${upstream_versions[$module]}"
+      (cd "$local_dir" && go mod edit -require="$module@${upstream_versions[$module]}")
+      changed=true
+    fi
+  done < <(parse_go_mod_requires "$local_file")
+
+  if [ "$changed" = true ]; then
+    echo "  📝 backend/go.mod: Overlapping dependency versions updated"
+    return 0
+  fi
+
+  echo "  ✓ backend/go.mod: No overlapping dependency version changes"
+  return 1
+}
+
+# Sync only overlapping NPM dependency versions (leave extra deps intact)
+sync_package_json_versions() {
+  local upstream_file="$1"
+  local local_file="$2"
+
+  if [ ! -f "$upstream_file" ]; then
+    echo "  ⚠️  Warning: Upstream package.json not available"
+    return 1
+  fi
+
+  if [ ! -f "$local_file" ]; then
+    echo "  ⚠️  Warning: Local file $local_file does not exist"
+    return 1
+  fi
+
+  if ! command -v node >/dev/null 2>&1; then
+    echo "  ⚠️  Warning: node is not available to sync package.json"
+    return 1
+  fi
+
+  local changed
+  changed=$(node <<'NODE' "$upstream_file" "$local_file"
+const fs = require('fs')
+const [,, upstreamPath, localPath] = process.argv
+const upstream = JSON.parse(fs.readFileSync(upstreamPath, 'utf8'))
+const local = JSON.parse(fs.readFileSync(localPath, 'utf8'))
+let changed = false
+
+function syncSection(section) {
+  if (!upstream[section] || !local[section]) return
+  for (const [dep, ver] of Object.entries(upstream[section])) {
+    if (Object.prototype.hasOwnProperty.call(local[section], dep) && local[section][dep] !== ver) {
+      local[section][dep] = ver
+      changed = true
+    }
+  }
+}
+
+syncSection('dependencies')
+syncSection('devDependencies')
+syncSection('peerDependencies')
+syncSection('optionalDependencies')
+
+if (changed) {
+  fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + '\n')
+}
+
+process.stdout.write(changed ? 'true' : 'false')
+NODE
+)
+
+  if [ "$changed" = "true" ]; then
+    echo "  📝 package.json: Overlapping dependency versions updated"
+    return 0
+  fi
+
+  echo "  ✓ package.json: No overlapping dependency version changes"
+  return 1
+}
+
 # Check each file for changes
 for file_mapping in "${FILES[@]}"; do
   IFS=':' read -r upstream_path local_path <<< "$file_mapping"
@@ -84,7 +203,13 @@ for file_mapping in "${FILES[@]}"; do
 
   upstream_file="${TMP_DIR}/$(basename "$upstream_path")"
 
-  # Special handling for README.md
+  # Fetch file from longhabit
+  if ! curl -sf "${BASE_URL}/${upstream_path}" > "${upstream_file}"; then
+    echo "  ⚠️  Warning: Could not fetch ${upstream_path} from upstream"
+    continue
+  fi
+
+  # Special handling for README.md and dependency files
   if [ "$local_path" = "README.md" ]; then
     if sync_readme_versions "$upstream_file" "$local_path"; then
       CHANGED_FILES+=("$local_path")
@@ -93,9 +218,19 @@ for file_mapping in "${FILES[@]}"; do
     continue
   fi
 
-  # Fetch file from longhabit
-  if ! curl -sf "${BASE_URL}/${upstream_path}" > "${upstream_file}"; then
-    echo "  ⚠️  Warning: Could not fetch ${upstream_path} from upstream"
+  if [ "$local_path" = "backend/go.mod" ]; then
+    if sync_go_mod_versions "$upstream_file" "$local_path"; then
+      CHANGED_FILES+=("$local_path")
+      HAS_CHANGES=true
+    fi
+    continue
+  fi
+
+  if [ "$local_path" = "package.json" ]; then
+    if sync_package_json_versions "$upstream_file" "$local_path"; then
+      CHANGED_FILES+=("$local_path")
+      HAS_CHANGES=true
+    fi
     continue
   fi
 
