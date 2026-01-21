@@ -1,49 +1,267 @@
 # New Project Plan: Stock Vite React Frontend + Embedded Go Backend
 
-This document describes the simplest way to create a new project that mirrors
-this repository's backend and embed workflow, but replaces the frontend with
-the official Vite React template. The goal is to keep the same developer
-experience (HMR, ESLint, Prettier, dev proxy, and production embed).
+This document describes how to create a new project from this SaaS template. The
+scaffold script automates most of the setup, leaving only branding and deployment
+configuration as manual steps.
+
+## Table of Contents
+
+- [Goals](#goals)
+- [Prerequisites](#prerequisites)
+- [Quick Start (Automated)](#quick-start-automated)
+- [What the Script Does](#what-the-script-does)
+- [Manual Steps After Scaffolding](#manual-steps-after-scaffolding)
+- [Verification](#verification)
+- [Reference: Configuration Files](#reference-configuration-files)
+- [Reference: Environment Variables](#reference-environment-variables)
+- [Reference: Project Structure](#reference-project-structure)
+- [Manual Setup (Alternative)](#manual-setup-alternative)
+- [Future Improvements](#future-improvements)
+
+---
 
 ## Goals
 
-- Keep the backend and embed flow unchanged.
-- Use the official Vite React template as the frontend.
-- Retain HMR, ESLint, and Prettier.
-- Preserve the dev proxy (`/api`) and production embed (`backend/dist`).
+- **Fresh frontend**: Replace the existing UI with the official Vite React-TS template
+- **Keep backend unchanged**: PocketBase + Go embed workflow stays the same
+- **Works out of the box**: Scaffolded app runs immediately with HMR
+- **Enhanced DX**: ESLint, Prettier, and TypeScript configured for React development
+- **Single binary deploy**: Frontend embeds into Go binary for production
 
-## Copy List (from this repo to the new repo)
+---
 
-- `backend/` (exclude `backend/dist`)
-- `Dockerfile`
-- `docker-compose.yml`
-- `fly.toml` (optional)
-- `package.json`
-- `vite.config.ts`
-- `tsconfig.json`
-- `eslint.config.mjs`
-- `.prettierrc.json`
+## Prerequisites
 
-## Do Not Copy
+Before running the scaffold script, ensure you have:
 
-- `frontend/` (old UI)
-- `index.html` (root-level, old UI entry)
-- `node_modules/`, `db/`, `backend/dist/`, `saas-template`
+| Tool | Version | Check Command | Install |
+|------|---------|---------------|---------|
+| Node.js | 18+ | `node --version` | [nodejs.org](https://nodejs.org) |
+| npm | 9+ | `npm --version` | Comes with Node.js |
+| Go | 1.21+ | `go version` | [go.dev](https://go.dev) |
+| jq | 1.6+ | `jq --version` | `brew install jq` (macOS) |
 
-## Step-by-Step Setup
+---
 
-1) Create a new repository folder.
-2) Copy the items from the "Copy List" above into the new repo.
-3) Scaffold the official Vite React template inside `frontend/`:
-   - `npm create vite@latest frontend -- --template react-ts`
-4) Update Vite to use `frontend/` as the root and build into `backend/dist`.
-5) Replace dependencies and lint/format configs with the minimal versions below.
-6) Verify dev and production builds.
+## Quick Start (Automated)
 
-## Vite Config (root + embed output)
+The scaffold script automates the entire setup process:
 
-Update `vite.config.ts` so the Vite root is `frontend/` and the build output is
-`backend/dist`. This keeps the backend embed flow unchanged.
+```bash
+# From the repo root
+./scripts/scaffold-frontend.sh
+```
+
+The script will prompt you for:
+
+1. **Project name** (e.g., `my-saas-app`)
+   - Used for: package.json name, binary name, Docker service/container names
+   - Format: letters, numbers, hyphens, underscores (must start with letter)
+
+2. **Go module path** (e.g., `github.com/username/my-saas-app`)
+   - Used for: backend/go.mod module declaration
+   - Format: `domain/org/project`
+
+After confirmation, the script runs automatically and installs dependencies.
+
+---
+
+## What the Script Does
+
+The scaffold script performs these steps in order:
+
+### Step 1: Scaffold Vite React-TS Frontend
+
+- Creates temporary directory
+- Runs `npm create vite@latest` with `react-ts` template
+- Copies only `index.html`, `public/`, and `src/` to `frontend/`
+- Template config files are discarded (we use root-level configs)
+
+### Step 2: Update vite.config.ts
+
+Replaces with minimal config:
+- `root: 'frontend'` - Vite looks in frontend/ for source
+- `build.outDir: '../backend/dist'` - Output for Go embed
+- `@` path alias - Import from `@/components/...`
+- `/api` proxy - Routes API calls to backend during dev
+
+### Step 3: Update package.json
+
+- Sets project name from your input
+- **Merges dependencies**: Vite template deps + extra dev tooling
+- Updates scripts with your binary name (`build:server`, `preview`)
+
+**Dependency strategy:**
+- Vite template dependencies are preserved (app works out of the box)
+- Extra dev dependencies are merged in:
+  - `@typescript-eslint/*` - TypeScript linting
+  - `eslint-plugin-react*` - React-specific rules
+  - `eslint-config-prettier` - Prettier integration
+  - `prettier` - Code formatting
+  - `globals` - Browser globals for ESLint
+
+### Step 4: Update eslint.config.mjs
+
+Replaces with minimal flat config:
+- TypeScript parser and plugin
+- React, React Hooks, React Refresh plugins
+- Prettier integration (disables conflicting rules)
+- Targets `frontend/src/**/*.{ts,tsx}`
+
+### Step 5: Update .prettierrc.json
+
+Replaces with minimal config:
+- No Tailwind plugin (add back if using Tailwind)
+- Consistent formatting: single quotes, no semicolons, 80 char width
+
+### Step 6: Update tsconfig.json
+
+Replaces with full config:
+- ESNext target with React JSX
+- Strict mode enabled
+- `@/*` path alias matching vite.config.ts
+- Includes only `frontend/src`
+
+### Step 7: Update backend/go.mod
+
+- Replaces module path on line 1 with your Go module path
+- Other dependencies remain unchanged
+
+### Step 8: Update Dockerfile
+
+Replaces `saas-template` with your project name in:
+- Build output: `go build -o YOUR_PROJECT`
+- Copy command: `COPY --from=builder-go /app/YOUR_PROJECT`
+- CMD: `CMD ["/app/YOUR_PROJECT", "serve", ...]`
+
+### Step 9: Update docker-compose.yml
+
+Replaces `saas-template` with your project name:
+- Service name
+- Container name
+
+### Step 10: Cleanup
+
+- Removes root `index.html` if it exists (old UI entry point)
+- The new entry point is `frontend/index.html`
+
+### Step 11: Install Dependencies
+
+- Runs `npm install` automatically
+- You're ready to start development
+
+---
+
+## Manual Steps After Scaffolding
+
+These steps require your input and cannot be automated:
+
+### 1. Update Email Template Branding
+
+Files in `backend/templates/`:
+
+| File | What to Update |
+|------|----------------|
+| `base.layout.gohtml` | Company name in header/footer, meta tags |
+| `styles.partial.gohtml` | Brand colors, fonts |
+| `verify-email.page.gohtml` | Email verification subject and copy |
+| `reset-password.page.gohtml` | Password reset subject and copy |
+| `auth-alert.page.gohtml` | Login alert subject and copy |
+| `tasks.page.gohtml` | Rename or remove if not using tasks feature |
+
+### 2. Update Sender Email
+
+In `backend/notifier/email.go`, update the From address:
+
+```go
+// Change from
+From: "noreply@saas-template.com"
+// To
+From: "noreply@yourdomain.com"
+```
+
+### 3. Update .gitignore
+
+Add your binary name and standard ignores:
+
+```gitignore
+# Dependencies
+node_modules/
+
+# Build outputs
+backend/dist/
+YOUR_PROJECT_NAME
+*.exe
+
+# Database
+db/
+*.db
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+```
+
+### 4. Create PocketBase Superuser
+
+After first run, create an admin user:
+
+```bash
+./YOUR_PROJECT_NAME superuser upsert admin@example.com yourpassword
+```
+
+Then access the admin dashboard at `http://localhost:8090/_/`
+
+### 5. Import Database Schema (Optional)
+
+If you want the default collections (users, tasks, settings):
+
+1. Open `http://localhost:8090/_/`
+2. Go to Settings → Import Collections
+3. Import `backend/pb_schema.json`
+
+For a clean start, skip this and define your own collections.
+
+---
+
+## Verification
+
+After scaffolding, verify everything works:
+
+```bash
+# Start development servers
+npm run dev
+# Frontend: http://localhost:5173 (with HMR)
+# Backend:  http://localhost:8090 (PocketBase)
+
+# Build for production
+npm run build
+# Creates: backend/dist/ (frontend assets)
+# Creates: ./YOUR_PROJECT_NAME (Go binary)
+
+# Run production build
+npm run preview
+# Serves embedded frontend from Go binary
+
+# Lint and format
+npm run lint    # TypeScript + ESLint
+npm run pretty  # Prettier
+```
+
+---
+
+## Reference: Configuration Files
+
+### vite.config.ts
 
 ```ts
 import react from '@vitejs/plugin-react'
@@ -73,51 +291,7 @@ export default defineConfig(({ mode }) => {
 })
 ```
 
-## Minimal `package.json` Dependencies
-
-Keep the existing scripts (they still work with `root: 'frontend'`) and replace
-dependencies with the list below.
-
-```json
-{
-  "scripts": {
-    "dev:client": "vite dev",
-    "dev:server": "cd backend && go run . --dir=../db serve",
-    "dev": "npm run dev:client & npm run dev:server",
-    "build:client": "npm run lint && vite build",
-    "build:server": "cd backend && CGO_ENABLED=0 go build -tags production -o ../saas-template",
-    "build": "npm run build:client && npm run build:server",
-    "preview": "./saas-template serve",
-    "compose": "docker compose up --build -d",
-    "pretty": "prettier frontend/src --write",
-    "lint": "tsc --noEmit && eslint frontend/src"
-  },
-  "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3"
-  },
-  "devDependencies": {
-    "@types/react": "^19.1.9",
-    "@types/react-dom": "^19.1.7",
-    "@typescript-eslint/eslint-plugin": "^8.49.0",
-    "@typescript-eslint/parser": "^8.49.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
-    "prettier": "^3.7.4",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.1"
-  }
-}
-```
-
-## Minimal ESLint Config
-
-Replace `eslint.config.mjs` with the following minimal flat config.
+### eslint.config.mjs
 
 ```js
 import tsPlugin from '@typescript-eslint/eslint-plugin'
@@ -157,9 +331,7 @@ export default [
 ]
 ```
 
-## Minimal Prettier Config
-
-Remove Tailwind or other extra plugins if you are not using them.
+### .prettierrc.json
 
 ```json
 {
@@ -175,76 +347,7 @@ Remove Tailwind or other extra plugins if you are not using them.
 }
 ```
 
-## TypeScript Paths (optional)
-
-If you keep the `@` alias in `vite.config.ts`, keep this in `tsconfig.json`:
-
-```json
-{
-  "compilerOptions": {
-    "paths": { "@/*": ["./frontend/src/*"] }
-  }
-}
-```
-
-## Verify
-
-- `npm install`
-- `npm run dev`
-  - Vite HMR runs at `http://localhost:5173`
-  - PocketBase reverse proxy runs at `http://localhost:8090`
-- `npm run build`
-  - Frontend output is in `backend/dist`
-- `npm run preview`
-  - Embedded frontend is served by the Go binary
-
-## Backend Renaming Checklist
-
-After copying `backend/`, update these files to use your new project name:
-
-### 1. `backend/go.mod` (line 1)
-```diff
-- module github.com/mauriceLC92/saas-template
-+ module github.com/YOUR_ORG/YOUR_PROJECT
-```
-
-### 2. `package.json` scripts
-```diff
-- "build:server": "cd backend && CGO_ENABLED=0 go build -tags production -o ../saas-template",
-+ "build:server": "cd backend && CGO_ENABLED=0 go build -tags production -o ../YOUR_PROJECT",
-
-- "preview": "./saas-template serve",
-+ "preview": "./YOUR_PROJECT serve",
-```
-
-### 3. `Dockerfile` (lines 21, 30)
-```diff
-- RUN CGO_ENABLED=0 go build -tags production -o saas-template
-+ RUN CGO_ENABLED=0 go build -tags production -o YOUR_PROJECT
-
-- COPY --from=builder-go /app/saas-template .
-+ COPY --from=builder-go /app/YOUR_PROJECT .
-
-- CMD ["/app/saas-template", "serve", "--http=0.0.0.0:8090"]
-+ CMD ["/app/YOUR_PROJECT", "serve", "--http=0.0.0.0:8090"]
-```
-
-### 4. `docker-compose.yml` (lines 2, 8)
-```diff
-  services:
--   saas-template:
-+   YOUR_PROJECT:
-      build:
-        ...
--     container_name: saas-template
-+     container_name: YOUR_PROJECT
-```
-
----
-
-## Complete tsconfig.json
-
-Replace the partial config with this full version:
+### tsconfig.json
 
 ```json
 {
@@ -272,103 +375,175 @@ Replace the partial config with this full version:
 
 ---
 
-## Environment Variables
+## Reference: Environment Variables
 
 | Variable | Purpose | Default | Used By |
 |----------|---------|---------|---------|
-| `DB_DIR` | SQLite database directory | `db` | Backend |
 | `VITE_BACKEND_URL` | Backend URL for dev proxy | `http://localhost:8090` | Vite |
 | `VITE_DOMAIN` | Domain injected at build | - | Vite/Docker |
 | `DOMAIN_NAME` | Docker build arg for domain | - | Dockerfile |
+| `DB_DIR` | SQLite database directory | `db` | Backend |
 | `MAILER_CRON_SCHEDULE` | Email notification cron | `0 9 * * *` (9 AM daily) | Backend |
 | `MAILER_NUM_WORKERS` | Email worker pool size | `10` | Backend |
 
 ---
 
-## Database Setup
+## Reference: Project Structure
 
-After the first run, set up PocketBase:
+After scaffolding, your project structure will be:
 
-### 1. Create a Superuser
+```
+your-project/
+├── backend/
+│   ├── dist/              # Frontend build output (git-ignored)
+│   ├── notifier/          # Email notification system
+│   ├── templates/         # Go HTML email templates
+│   ├── go.mod             # Go module (updated with your path)
+│   ├── go.sum
+│   ├── main.go            # PocketBase entry point
+│   ├── auth.go            # Auth hooks and middleware
+│   ├── mailer.go          # Email worker pool
+│   └── pb_schema.json     # Default PocketBase schema
+├── frontend/
+│   ├── public/            # Static assets
+│   ├── src/               # React source code
+│   │   ├── App.tsx        # Main component
+│   │   ├── main.tsx       # Entry point
+│   │   └── ...
+│   └── index.html         # HTML entry point
+├── db/                    # SQLite database (git-ignored)
+├── scripts/
+│   └── scaffold-frontend.sh
+├── .prettierrc.json
+├── docker-compose.yml
+├── Dockerfile
+├── eslint.config.mjs
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── YOUR_PROJECT_NAME      # Built binary (git-ignored)
+```
+
+---
+
+## Manual Setup (Alternative)
+
+If you prefer not to use the script, or need to understand what it does:
+
+### 1. Copy Required Files
+
+From this repo to your new repo:
+- `backend/` (exclude `backend/dist/`)
+- `Dockerfile`
+- `docker-compose.yml`
+- `fly.toml` (optional, for Fly.io deployment)
+
+### 2. Scaffold Vite Frontend
+
 ```bash
-./YOUR_PROJECT superuser upsert admin@example.com yourpassword
+npm create vite@latest frontend -- --template react-ts
 ```
 
-### 2. Access Admin Dashboard
-Open `http://localhost:8090/_/` in your browser.
+Then remove the config files from `frontend/` (we use root-level configs):
+- `frontend/vite.config.ts`
+- `frontend/tsconfig*.json`
+- `frontend/eslint.config.js`
+- `frontend/package.json`
 
-### 3. Import Schema (Optional)
-If starting from the full backend, import `backend/pb_schema.json` via the admin
-dashboard to get the default collections (users, settings, tasks).
+### 3. Create Root Config Files
 
-For a clean start, you can skip this and define your own collections.
+Create `vite.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc.json`,
+and `package.json` at the repo root. See [Reference: Configuration Files](#reference-configuration-files)
+for the exact contents.
 
----
+### 4. Update Backend References
 
-## Email Template Branding
+Update these files with your project name:
 
-Update these files in `backend/templates/` with your project branding:
-
-| File | Purpose | What to Update |
-|------|---------|----------------|
-| `base.layout.gohtml` | HTML wrapper | Company name, meta tags |
-| `styles.partial.gohtml` | Inline CSS | Brand colors, fonts |
-| `verify-email.page.gohtml` | Email verification | Subject line, copy |
-| `reset-password.page.gohtml` | Password reset | Subject line, copy |
-| `auth-alert.page.gohtml` | Login alert | Subject line, copy |
-| `tasks.page.gohtml` | Task reminders | Rename/remove if not using tasks |
-
-Also update the sender email in `backend/notifier/email.go`:
+**backend/go.mod** (line 1):
 ```diff
-- From: "noreply@saas-template.com"
-+ From: "noreply@YOUR_DOMAIN.com"
+- module github.com/mauriceLC92/saas-template
++ module github.com/YOUR_ORG/YOUR_PROJECT
+```
+
+**package.json** scripts:
+```diff
+- "build:server": "... -o ../saas-template",
++ "build:server": "... -o ../YOUR_PROJECT",
+- "preview": "./saas-template serve",
++ "preview": "./YOUR_PROJECT serve",
+```
+
+**Dockerfile** (3 places):
+```diff
+- RUN CGO_ENABLED=0 go build -tags production -o saas-template
++ RUN CGO_ENABLED=0 go build -tags production -o YOUR_PROJECT
+- COPY --from=builder-go /app/saas-template .
++ COPY --from=builder-go /app/YOUR_PROJECT .
+- CMD ["/app/saas-template", "serve", "--http=0.0.0.0:8090"]
++ CMD ["/app/YOUR_PROJECT", "serve", "--http=0.0.0.0:8090"]
+```
+
+**docker-compose.yml** (2 places):
+```diff
+  services:
+-   saas-template:
++   YOUR_PROJECT:
+      ...
+-     container_name: saas-template
++     container_name: YOUR_PROJECT
+```
+
+### 5. Install and Verify
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run preview
 ```
 
 ---
 
-## Recommended .gitignore
+## Future Improvements
 
-Add these entries to your `.gitignore`:
+Potential enhancements for the scaffold script:
 
-```gitignore
-# Dependencies
-node_modules/
-
-# Build outputs
-backend/dist/
-YOUR_PROJECT
-*.exe
-
-# Database
-db/
-*.db
-
-# Environment
-.env
-.env.local
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-```
+- [ ] **Tailwind CSS option**: Prompt to include Tailwind with proper config
+- [ ] **shadcn/ui option**: Prompt to scaffold with UI component library
+- [ ] **TanStack integration**: Option to add Router + Query setup
+- [ ] **Auth scaffolding**: Generate login/register pages connected to PocketBase
+- [ ] **API service template**: Generate typed PocketBase client wrapper
+- [ ] **Test setup**: Add Vitest configuration option
+- [ ] **CI/CD templates**: GitHub Actions workflow for build/deploy
+- [ ] **Fly.io config**: Auto-update fly.toml with project name
 
 ---
 
-## Migration Checklist
+## Troubleshooting
 
-- Remove root `index.html` and any old `frontend/` files from the source repo.
-- Confirm `frontend/index.html` exists (Vite template default).
-- Verify `vite.config.ts` uses `root: 'frontend'` and `build.outDir: '../backend/dist'`.
-- Ensure `frontend/public/` holds any icons or `manifest` you want to keep.
-- Keep `/api` proxy + `VITE_BACKEND_URL` in `vite.config.ts`.
-- Align `@` alias in `vite.config.ts` and `tsconfig.json` if you use it.
-- Trim `package.json` dependencies to the minimal list.
-- Update `eslint.config.mjs` and `.prettierrc.json` to match the minimal configs.
-- **Complete the Backend Renaming Checklist above.**
-- **Update email templates with your branding.**
-- **Add the recommended .gitignore entries.**
+### "jq: command not found"
+
+Install jq:
+- macOS: `brew install jq`
+- Ubuntu/Debian: `sudo apt install jq`
+- Windows: `choco install jq`
+
+### "frontend/ already exists"
+
+The script will prompt you to delete it. If you want to keep it, back it up first:
+```bash
+mv frontend frontend.bak
+./scripts/scaffold-frontend.sh
+```
+
+### ESLint errors after scaffolding
+
+The Vite template may include code patterns our ESLint config warns about.
+Run `npm run lint` to see issues, or `npm run pretty` to auto-fix formatting.
+
+### Build fails with "Cannot find module '@/...'"
+
+Ensure both `vite.config.ts` and `tsconfig.json` have matching `@` alias paths:
+- vite.config.ts: `alias: { '@': path.resolve(__dirname, 'frontend/src') }`
+- tsconfig.json: `"paths": { "@/*": ["./frontend/src/*"] }`
