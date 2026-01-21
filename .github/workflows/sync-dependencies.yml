@@ -35,28 +35,43 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Prepare sync branch
-        id: branch
-        run: |
-          BRANCH_NAME="sync/dependencies-$(date +%Y-%m-%d)"
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-
-          git fetch origin
-          git checkout -B "$BRANCH_NAME" origin/master
-
       - name: Check for existing sync PR
         id: check-pr
         run: |
           # Check if there's already an open PR with the sync label
           EXISTING_PR=$(gh pr list --label "dependencies" --label "automated" --state open --json number --jq '.[0].number')
           if [ -n "$EXISTING_PR" ]; then
+            EXISTING_BRANCH=$(gh pr view "$EXISTING_PR" --json headRefName --jq '.headRefName')
             echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "Found existing PR #$EXISTING_PR"
+            echo "existing_branch=$EXISTING_BRANCH" >> $GITHUB_OUTPUT
+            echo "Found existing PR #$EXISTING_PR on branch $EXISTING_BRANCH"
           else
             echo "No existing PR found"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Prepare sync branch
+        id: branch
+        run: |
+          DEFAULT_BASE="origin/master"
+
+          if [ -n "${{ steps.check-pr.outputs.existing_branch }}" ]; then
+            BRANCH_NAME="${{ steps.check-pr.outputs.existing_branch }}"
+            git fetch origin "$BRANCH_NAME" || true
+
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
+              git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+            else
+              git checkout -B "$BRANCH_NAME" "$DEFAULT_BASE"
+            fi
+          else
+            BRANCH_NAME="sync/dependencies-$(date +%Y-%m-%d)"
+            git fetch origin
+            git checkout -B "$BRANCH_NAME" "$DEFAULT_BASE"
+          fi
+
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Sync dependencies from longhabit
         id: sync
