@@ -6,7 +6,6 @@ set -euo pipefail
 
 LONGHABIT_REPO="${LONGHABIT_REPO:-s-petr/longhabit}"
 LONGHABIT_BRANCH="${LONGHABIT_BRANCH:-main}"
-BASE_URL="https://raw.githubusercontent.com/${LONGHABIT_REPO}/${LONGHABIT_BRANCH}"
 
 # Define file mappings: "upstream_path:local_path"
 declare -a FILES=(
@@ -19,6 +18,22 @@ declare -a FILES=(
 # Create temporary directory for comparison
 TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
+
+echo "🔄 Fetching upstream repository ${LONGHABIT_REPO}@${LONGHABIT_BRANCH}..."
+
+UPSTREAM_DIR="${TMP_DIR}/upstream"
+CLONE_URL="https://github.com/${LONGHABIT_REPO}.git"
+
+if [ -n "${GH_TOKEN:-}" ]; then
+  CLONE_URL="https://x-access-token:${GH_TOKEN}@github.com/${LONGHABIT_REPO}.git"
+fi
+
+if ! git clone --depth=1 --branch "$LONGHABIT_BRANCH" "$CLONE_URL" "$UPSTREAM_DIR" >/dev/null 2>&1; then
+  echo "❌ Failed to clone upstream repository $LONGHABIT_REPO (branch: $LONGHABIT_BRANCH)"
+  exit 1
+fi
+
+echo "✓ Upstream repository cloned to $UPSTREAM_DIR"
 
 CHANGED_FILES=()
 HAS_CHANGES=false
@@ -568,11 +583,10 @@ for file_mapping in "${FILES[@]}"; do
   echo ""
   echo "Checking: $local_path"
 
-  upstream_file="${TMP_DIR}/$(basename "$upstream_path")"
+  upstream_file="${UPSTREAM_DIR}/${upstream_path}"
 
-  # Fetch file from longhabit
-  if ! curl -sf "${BASE_URL}/${upstream_path}" > "${upstream_file}"; then
-    echo "  ⚠️  Warning: Could not fetch ${upstream_path} from upstream"
+  if [ ! -f "$upstream_file" ]; then
+    echo "  ⚠️  Warning: Could not find ${upstream_path} in upstream clone"
     continue
   fi
 

@@ -81,6 +81,7 @@ jobs:
         env:
           LONGHABIT_REPO: s-petr/longhabit
           LONGHABIT_BRANCH: main
+          GH_TOKEN: ${{ github.token }}
 
       - name: Update Go dependencies
         if: steps.sync.outputs.has_changes == 'true' && contains(steps.sync.outputs.changed_files, 'backend/go.mod')
