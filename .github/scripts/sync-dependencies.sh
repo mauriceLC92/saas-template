@@ -160,22 +160,36 @@ const fs = require('fs')
 const [,, upstreamPath, localPath] = process.argv
 const upstream = JSON.parse(fs.readFileSync(upstreamPath, 'utf8'))
 const local = JSON.parse(fs.readFileSync(localPath, 'utf8'))
-let changed = false
 
-function syncSection(section) {
-  if (!upstream[section] || !local[section]) return
-  for (const [dep, ver] of Object.entries(upstream[section])) {
-    if (Object.prototype.hasOwnProperty.call(local[section], dep) && local[section][dep] !== ver) {
-      local[section][dep] = ver
+// Only sync dependency sections to avoid overwriting whitelabel metadata
+const sections = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+  'overrides',
+  'resolutions'
+]
+
+let changed = false
+for (const section of sections) {
+  const upstreamSection = upstream[section]
+  const localSection = Object.prototype.hasOwnProperty.call(local, section) ? local[section] : undefined
+
+  if (upstreamSection === undefined) {
+    if (localSection !== undefined) {
+      delete local[section]
       changed = true
     }
+    continue
+  }
+
+  const same = JSON.stringify(upstreamSection) === JSON.stringify(localSection)
+  if (!same) {
+    local[section] = upstreamSection
+    changed = true
   }
 }
-
-syncSection('dependencies')
-syncSection('devDependencies')
-syncSection('peerDependencies')
-syncSection('optionalDependencies')
 
 if (changed) {
   fs.writeFileSync(localPath, JSON.stringify(local, null, 2) + '\n')
@@ -186,11 +200,11 @@ NODE
 )
 
   if [ "$changed" = "true" ]; then
-    echo "  📝 package.json: Overlapping dependency versions updated"
+    echo "  📝 package.json: Dependency sections synced from upstream"
     return 0
   fi
 
-  echo "  ✓ package.json: No overlapping dependency version changes"
+  echo "  ✓ package.json: No dependency section changes"
   return 1
 }
 
