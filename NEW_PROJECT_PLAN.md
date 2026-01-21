@@ -122,10 +122,13 @@ Replaces with full config:
 - `@/*` path alias matching vite.config.ts
 - Includes only `frontend/src`
 
-### Step 7: Update backend/go.mod
+### Step 7: Update backend/go.mod and Go Imports
 
+- Extracts the old module path from `go.mod`
 - Replaces module path on line 1 with your Go module path
-- Other dependencies remain unchanged
+- Finds all `.go` files that import from the old module
+- Updates import statements to use the new module path
+- Other dependencies in `go.sum` remain unchanged
 
 ### Step 8: Update Dockerfile
 

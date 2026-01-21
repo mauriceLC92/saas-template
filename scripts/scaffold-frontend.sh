@@ -134,7 +134,8 @@ trap 'rm -rf "$tmp_parent"' EXIT
 
 (
   cd "$tmp_parent"
-  npm_config_yes=true npm create vite@latest "vite-template" -- --template react-ts
+  # Use CI=true to skip interactive prompts and prevent auto-install/start
+  CI=true npm create vite@latest "vite-template" -- --template react-ts
 )
 
 mkdir -p frontend
@@ -338,14 +339,26 @@ TSCONFIG_EOF
 echo "Updated tsconfig.json"
 
 ################################################################################
-# Step 7: Update backend/go.mod
+# Step 7: Update backend/go.mod and Go import paths
 ################################################################################
 
-print_header "Step 7: Updating backend/go.mod"
+print_header "Step 7: Updating backend/go.mod and Go imports"
 
-# Use sed to replace only the first line (module declaration)
+# Get the old module path from go.mod
+OLD_MODULE=$(head -1 backend/go.mod | sed 's/^module //')
+
+# Update the module declaration in go.mod
 sed -i.bak "1s|^module .*|module $GO_MODULE|" backend/go.mod
 rm -f backend/go.mod.bak
+
+# Update all Go files that import from the old module path
+find backend -name '*.go' -type f | while read -r gofile; do
+  if grep -q "$OLD_MODULE" "$gofile"; then
+    sed -i.bak "s|$OLD_MODULE|$GO_MODULE|g" "$gofile"
+    rm -f "${gofile}.bak"
+    echo "  Updated imports in: $gofile"
+  fi
+done
 
 echo "Updated backend/go.mod module path to: $GO_MODULE"
 
