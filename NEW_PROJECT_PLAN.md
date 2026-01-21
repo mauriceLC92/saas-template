@@ -27,6 +27,7 @@ configuration as manual steps.
 - **Works out of the box**: Scaffolded app runs immediately with HMR
 - **Enhanced DX**: ESLint, Prettier, and TypeScript configured for React development
 - **Single binary deploy**: Frontend embeds into Go binary for production
+- **QoL features included**: TanStack Router + Query, PocketBase typed client, auth services/hooks, settings services/hooks, Zod schemas
 
 ---
 
@@ -93,7 +94,14 @@ Replaces with minimal config:
 
 **Dependency strategy:**
 - Vite template dependencies are preserved (app works out of the box)
+- Extra production dependencies are merged in:
+  - `@tanstack/react-query` - Server state management
+  - `@tanstack/react-router` - Type-safe file-based routing
+  - `pocketbase` - PocketBase JavaScript SDK
+  - `zod` - Runtime type validation for schemas
 - Extra dev dependencies are merged in:
+  - `@tanstack/react-query-devtools` - Query devtools
+  - `@tanstack/react-router-devtools` - Router devtools
   - `@typescript-eslint/*` - TypeScript linting
   - `eslint-plugin-react*` - React-specific rules
   - `eslint-config-prettier` - Prettier integration
@@ -122,7 +130,62 @@ Replaces with full config:
 - `@/*` path alias matching vite.config.ts
 - Includes only `frontend/src`
 
-### Step 7: Update backend/go.mod and Go Imports
+### Steps 7-18: Create Frontend QoL Features
+
+The scaffold creates a complete frontend foundation:
+
+**Step 7: Directory structure**
+- Creates `lib/`, `schemas/`, `services/`, `hooks/`, `types/`, `pages/`
+
+**Step 8: lib/set-theme.ts**
+- Theme management utility (light/dark/system)
+- Required by userQueryOptions for auto-applying user theme preference
+
+**Step 9: Schema files**
+- `pb-schema.ts` - PocketBase ID and token validation
+- `settings-schema.ts` - User settings with theme enum
+- `user-schema.ts` - User data and update validation
+- `auth-schema.ts` - Login, register, password reset validation
+
+**Step 10: types/pocketbase-types.ts**
+- TypedPocketBase type for collection-aware SDK
+- Settings and Users collection types
+
+**Step 11: Services**
+- `pocketbase.ts` - Typed PocketBase client export
+- `api-auth.ts` - Complete auth API (login, register, verify, password reset, real-time subscriptions)
+- `api-settings.ts` - Settings CRUD operations
+
+**Step 12: Hooks (simplified - no toast calls)**
+- `use-auth.ts` - Auth state, login/logout/register functions
+- `use-settings.ts` - Settings state with optimistic updates
+
+**Step 13: router.tsx**
+- TanStack Router setup with QueryClient integration
+- Root route with user data pre-loading and theme application
+- Home route (/) - public, redirects logged-in users to /dashboard
+- Dashboard route (/dashboard) - protected, redirects unauthenticated to /
+- Devtools included for development
+
+**Step 14: root-layout.tsx**
+- Minimal layout wrapper with centered content
+
+**Step 15: Pages**
+- `home.tsx` - Public landing page placeholder
+- `dashboard.tsx` - Protected example with logout button
+- `error.tsx` - Error boundary page
+- `not-found.tsx` - 404 page
+
+**Step 16: root.tsx**
+- Entry point that mounts Router component
+
+**Step 17: Update index.html**
+- Changes script src from `/src/main.tsx` to `/src/root.tsx`
+
+**Step 18: Cleanup**
+- Removes Vite template files (App.tsx, App.css, main.tsx)
+
+### Step 19: Update backend/go.mod and Go Imports
 
 - Extracts the old module path from `go.mod`
 - Replaces module path on line 1 with your Go module path
@@ -130,25 +193,25 @@ Replaces with full config:
 - Updates import statements to use the new module path
 - Other dependencies in `go.sum` remain unchanged
 
-### Step 8: Update Dockerfile
+### Step 20: Update Dockerfile
 
 Replaces `saas-template` with your project name in:
 - Build output: `go build -o YOUR_PROJECT`
 - Copy command: `COPY --from=builder-go /app/YOUR_PROJECT`
 - CMD: `CMD ["/app/YOUR_PROJECT", "serve", ...]`
 
-### Step 9: Update docker-compose.yml
+### Step 21: Update docker-compose.yml
 
 Replaces `saas-template` with your project name:
 - Service name
 - Container name
 
-### Step 10: Cleanup
+### Step 22: Cleanup
 
 - Removes root `index.html` if it exists (old UI entry point)
 - The new entry point is `frontend/index.html`
 
-### Step 11: Install Dependencies
+### Step 23: Install Dependencies
 
 - Runs `npm install` automatically
 - You're ready to start development
@@ -409,11 +472,33 @@ your-project/
 │   └── pb_schema.json     # Default PocketBase schema
 ├── frontend/
 │   ├── public/            # Static assets
-│   ├── src/               # React source code
-│   │   ├── App.tsx        # Main component
-│   │   ├── main.tsx       # Entry point
-│   │   └── ...
-│   └── index.html         # HTML entry point
+│   ├── src/
+│   │   ├── hooks/
+│   │   │   ├── use-auth.ts       # Auth hook (login, logout, register, etc.)
+│   │   │   └── use-settings.ts   # Settings hook with optimistic updates
+│   │   ├── lib/
+│   │   │   └── set-theme.ts      # Theme management utility
+│   │   ├── pages/
+│   │   │   ├── dashboard.tsx     # Protected route example
+│   │   │   ├── error.tsx         # Error boundary page
+│   │   │   ├── home.tsx          # Public landing page
+│   │   │   └── not-found.tsx     # 404 page
+│   │   ├── schemas/
+│   │   │   ├── auth-schema.ts    # Login, register, password reset validation
+│   │   │   ├── pb-schema.ts      # PocketBase ID/token types
+│   │   │   ├── settings-schema.ts # Settings validation
+│   │   │   └── user-schema.ts    # User data validation
+│   │   ├── services/
+│   │   │   ├── api-auth.ts       # Auth API + userQueryOptions
+│   │   │   ├── api-settings.ts   # Settings CRUD
+│   │   │   └── pocketbase.ts     # Typed PocketBase client
+│   │   ├── types/
+│   │   │   └── pocketbase-types.ts # TypedPocketBase definitions
+│   │   ├── index.css             # Vite template styles
+│   │   ├── root.tsx              # Entry point (mounts Router)
+│   │   ├── root-layout.tsx       # App layout wrapper
+│   │   └── router.tsx            # TanStack Router setup
+│   └── index.html                # HTML entry point
 ├── db/                    # SQLite database (git-ignored)
 ├── scripts/
 │   └── scaffold-frontend.sh
@@ -508,15 +593,83 @@ npm run preview
 
 ---
 
+## Using the Scaffolded Features
+
+### Adding Protected Routes
+
+To add a new protected route, follow the pattern in `router.tsx`:
+
+```tsx
+const myProtectedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: 'my-page',
+  component: MyPage,
+  beforeLoad: () => {
+    if (!checkVerifiedUserIsLoggedIn()) throw redirect({ to: '/' })
+  }
+})
+
+// Add to routeTree
+const routeTree = rootRoute.addChildren([homeRoute, dashboardRoute, myProtectedRoute])
+```
+
+### Building Login/Register UI
+
+The hooks and services are ready - you just need to create the UI:
+
+```tsx
+// Example login form using use-auth hook
+import useAuth from '@/hooks/use-auth'
+import { loginSchema, LoginFields } from '@/schemas/auth-schema'
+
+function LoginForm() {
+  const { loginWithPassword } = useAuth()
+
+  const onSubmit = async (data: LoginFields) => {
+    try {
+      await loginWithPassword(data.email, data.password)
+      // Success - router navigates to /dashboard automatically
+    } catch (error) {
+      // Handle error (show toast, display message, etc.)
+    }
+  }
+
+  // Build your form UI here...
+}
+```
+
+### Adding Toast Notifications
+
+The hooks don't include toast calls - add your preferred notification library:
+
+```tsx
+// With sonner
+import { toast } from 'sonner'
+
+// In your component
+const { loginWithPassword } = useAuth()
+
+const handleLogin = async (data) => {
+  try {
+    await loginWithPassword(data.email, data.password)
+    toast.success('Logged in successfully')
+  } catch (error) {
+    toast.error('Could not log in', { description: error.message })
+  }
+}
+```
+
+---
+
 ## Future Improvements
 
 Potential enhancements for the scaffold script:
 
 - [ ] **Tailwind CSS option**: Prompt to include Tailwind with proper config
 - [ ] **shadcn/ui option**: Prompt to scaffold with UI component library
-- [ ] **TanStack integration**: Option to add Router + Query setup
-- [ ] **Auth scaffolding**: Generate login/register pages connected to PocketBase
-- [ ] **API service template**: Generate typed PocketBase client wrapper
+- [x] ~~**TanStack integration**: Option to add Router + Query setup~~ (Now included!)
+- [ ] **Auth pages scaffolding**: Generate login/register page UI components
+- [x] ~~**API service template**: Generate typed PocketBase client wrapper~~ (Now included!)
 - [ ] **Test setup**: Add Vitest configuration option
 - [ ] **CI/CD templates**: GitHub Actions workflow for build/deploy
 - [ ] **Fly.io config**: Auto-update fly.toml with project name
