@@ -1301,15 +1301,15 @@ echo "  Created dashboard.tsx"
 
 # error.tsx
 cat > frontend/src/pages/error.tsx << 'ERROR_PAGE_EOF'
-import { useRouterState } from '@tanstack/react-router'
+import type { ErrorComponentProps } from '@tanstack/react-router'
 
-export default function ErrorPage() {
-  const error = useRouterState({ select: (s) => s.error })
+export default function ErrorPage({ error }: ErrorComponentProps) {
+  const message = error instanceof Error ? error.message : 'Unknown error'
 
   return (
     <main>
       <h1>Something went wrong</h1>
-      <pre>{error?.message}</pre>
+      <pre>{message}</pre>
     </main>
   )
 }
