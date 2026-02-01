@@ -570,8 +570,10 @@ From this repo to your new repo:
 ### 2. Scaffold Vite Frontend
 
 ```bash
-npm create vite@latest frontend -- --template react-ts
+npm create vite@latest frontend -- --template react-ts --no-interactive
 ```
+
+The `--no-interactive` flag prevents prompts and auto-installation, allowing the scaffolding to run non-interactively. This is the officially supported way to avoid interactive prompts in create-vite.
 
 Then remove the config files from `frontend/` (we use root-level configs):
 - `frontend/vite.config.ts`

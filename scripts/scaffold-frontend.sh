@@ -118,8 +118,8 @@ trap 'rm -rf "$tmp_parent"' EXIT
 
 (
   cd "$tmp_parent"
-  # Use CI=true to skip interactive prompts and prevent auto-install/start
-  CI=true npm create vite@latest "vite-template" -- --template react-ts
+  # Use --no-interactive flag to skip prompts and prevent auto-install/start
+  npm create vite@latest "vite-template" -- --template react-ts --no-interactive
 )
 
 mkdir -p frontend
