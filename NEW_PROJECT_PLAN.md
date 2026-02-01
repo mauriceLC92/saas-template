@@ -47,10 +47,24 @@ Before running the scaffold script, ensure you have:
 
 ## Quick Start (Automated)
 
+### 1. Clone the Template
+
+First, clone this repository with your desired project name:
+
+```bash
+# Clone with your project name
+git clone https://github.com/mauriceLC92/saas-template your-project-name
+cd your-project-name
+```
+
+**Important:** The directory name you choose during cloning will be your workspace. The scaffold script operates in-place and does NOT rename folders.
+
+### 2. Run the Scaffold Script
+
 The scaffold script automates the entire setup process:
 
 ```bash
-# From the repo root
+# From the project directory
 ./scripts/scaffold-frontend.sh
 
 # Optional: Include Catalyst UI components
@@ -77,7 +91,9 @@ After confirmation, the script runs automatically and installs dependencies.
 
 ## What the Script Does
 
-The scaffold script performs these steps in order:
+The scaffold script performs these steps in order (27 total steps):
+
+**Note:** The script operates in-place on your cloned directory. It does NOT rename or move your project folder.
 
 ### Step 1: Scaffold Vite React-TS Frontend
 

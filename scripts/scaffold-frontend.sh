@@ -13,7 +13,6 @@ set -euo pipefail
 # 6. Run npm install
 # 7. Remove template-specific files (CLAUDE.md, README.md, NEW_PROJECT_PLAN.md)
 # 8. Initialize fresh git repository with single initial commit
-# 9. Rename project folder to match project name
 #
 # Run from the repo root: ./scripts/scaffold-frontend.sh
 ################################################################################
@@ -1530,31 +1529,6 @@ Module: $GO_MODULE"
 echo "Fresh git repository initialized with initial commit"
 
 ################################################################################
-# Step 28: Rename project folder
-################################################################################
-
-print_header "Step 28: Renaming project folder"
-
-CURRENT_DIR=$(basename "$PWD")
-if [ "$CURRENT_DIR" != "$PROJECT_NAME" ]; then
-  PARENT_DIR=$(dirname "$PWD")
-  NEW_PATH="$PARENT_DIR/$PROJECT_NAME"
-
-  if [ -d "$NEW_PATH" ]; then
-    echo "Warning: $NEW_PATH already exists. Folder not renamed."
-    echo "You can manually rename later: mv $CURRENT_DIR $PROJECT_NAME"
-  else
-    # Move to parent, rename, and update PWD
-    cd "$PARENT_DIR"
-    mv "$CURRENT_DIR" "$PROJECT_NAME"
-    cd "$PROJECT_NAME"
-    echo "Folder renamed: $CURRENT_DIR → $PROJECT_NAME"
-  fi
-else
-  echo "Folder already named: $PROJECT_NAME"
-fi
-
-################################################################################
 # Post-setup guidance
 ################################################################################
 
@@ -1566,11 +1540,10 @@ echo "║  Project: $PROJECT_NAME"
 echo "║  Location: $(pwd)"
 echo "╠════════════════════════════════════════════════════════════════╣"
 echo "║  Next steps:                                                   ║"
-echo "║    1. cd $(pwd)"
-echo "║    2. Create GitHub repo: gh repo create $PROJECT_NAME"
-echo "║    3. git remote add origin <your-repo-url>"
-echo "║    4. git push -u origin main"
-echo "║    5. npm run dev                                              ║"
+echo "║    1. Create GitHub repo: gh repo create $PROJECT_NAME        ║"
+echo "║    2. git remote add origin <your-repo-url>                   ║"
+echo "║    3. git push -u origin main                                 ║"
+echo "║    4. npm run dev                                              ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Remaining manual steps:"

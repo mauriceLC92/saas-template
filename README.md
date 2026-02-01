@@ -74,11 +74,14 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
 
 ### Quick Start
 
-1. **Clone the template**
+1. **Clone the template with your project name**
    ```bash
-   git clone https://github.com/mauriceLC92/saas-template
-   cd saas-template
+   # Replace 'my-saas-app' with your desired project name
+   git clone https://github.com/mauriceLC92/saas-template my-saas-app
+   cd my-saas-app
    ```
+
+   **Note:** Choose your project name during cloning. The scaffold script will NOT rename your folder.
 
 2. **Install dependencies**
    ```bash
@@ -107,6 +110,26 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:8090
    - PocketBase Admin: http://localhost:8090/_/
+
+### Using the Scaffold Script (Recommended)
+
+For new projects, use the included scaffold script to automate the setup:
+
+```bash
+# After cloning with your project name
+./scripts/scaffold-frontend.sh
+```
+
+The script will:
+- Replace the frontend with fresh Vite React-TS template
+- Update all project references (package.json, go.mod, Docker configs)
+- Optionally include Catalyst UI components
+- Create a fresh git repository with clean history
+- Install all dependencies
+
+See [NEW_PROJECT_PLAN.md](NEW_PROJECT_PLAN.md) for complete scaffold documentation.
+
+**Important:** The scaffold script operates in-place and does not rename folders. Choose your project name when cloning the repository.
 
 ### Development Commands
 
