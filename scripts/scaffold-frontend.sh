@@ -17,8 +17,8 @@ set -euo pipefail
 # Run from the repo root: ./scripts/scaffold-frontend.sh
 ################################################################################
 
-# Catalyst UI Kit configuration
-CATALYST_SOURCE="${CATALYST_SOURCE:-$HOME/Downloads/adamwathanss-tuibeta 2/adamwathanss-tuibeta/catalyst-ui-kit}"
+# Catalyst UI Kit configuration (required)
+CATALYST_SOURCE="${CATALYST_SOURCE:-}"
 INCLUDE_CATALYST=""
 
 die() {
@@ -35,6 +35,24 @@ print_header() {
   echo "========================================"
   echo "$1"
   echo "========================================"
+}
+
+has_tsx_files() {
+  local src="$1"
+  compgen -G "$src"/*.tsx >/dev/null 2>&1
+}
+
+resolve_catalyst_source() {
+  local src="$1"
+  if [[ -d "$src" ]] && has_tsx_files "$src"; then
+    echo "$src"
+    return 0
+  fi
+  if [[ -d "$src/typescript" ]] && has_tsx_files "$src/typescript"; then
+    echo "$src/typescript"
+    return 0
+  fi
+  return 1
 }
 
 # Validate project name (alphanumeric, hyphens, underscores only)
@@ -96,6 +114,31 @@ if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
 fi
 
 ################################################################################
+# Catalyst UI Kit (Required)
+################################################################################
+
+print_header "Catalyst UI Kit (Required)"
+
+echo "Catalyst UI is a premium component library from Tailwind CSS."
+echo "It includes 27 accessible React components (buttons, forms, dialogs, etc.)"
+echo ""
+
+if [[ -z "$CATALYST_SOURCE" ]]; then
+  die "CATALYST_SOURCE is required. Set CATALYST_SOURCE=\"/path\" ./scripts/scaffold-frontend.sh"
+fi
+
+if CATALYST_RESOLVED="$(resolve_catalyst_source "$CATALYST_SOURCE")"; then
+  if [[ "$CATALYST_RESOLVED" != "$CATALYST_SOURCE" ]]; then
+    echo "Adjusted Catalyst source to: $CATALYST_RESOLVED"
+  fi
+  CATALYST_SOURCE="$CATALYST_RESOLVED"
+  echo "Catalyst source found at: $CATALYST_SOURCE"
+  INCLUDE_CATALYST="y"
+else
+  die "Catalyst source not found at: $CATALYST_SOURCE"
+fi
+
+################################################################################
 # Clean up existing frontend directory
 ################################################################################
 
@@ -118,7 +161,7 @@ trap 'rm -rf "$tmp_parent"' EXIT
 (
   cd "$tmp_parent"
   # Use --no-interactive flag to skip prompts and prevent auto-install/start
-  npm create vite@latest "vite-template" -- --template react-ts --no-interactive
+  npm create vite@latest "vite-template" -- --template react-ts --no-interactive --no-install
 )
 
 mkdir -p frontend
@@ -185,7 +228,7 @@ EXTRA_DEPS='{
   "zod": "^4.1.13"
 }'
 
-# Add Catalyst dependencies if user opted in
+# Add Catalyst dependencies (required)
 if [[ "$INCLUDE_CATALYST" =~ ^[Yy]$ ]]; then
   CATALYST_DEPS='{
     "@headlessui/react": "^2.2.0",
@@ -341,47 +384,6 @@ cat > tsconfig.json << 'TSCONFIG_EOF'
 TSCONFIG_EOF
 
 echo "Updated tsconfig.json"
-
-################################################################################
-# Optional: Catalyst UI Kit
-################################################################################
-
-print_header "Optional: Catalyst UI Kit"
-
-echo "Catalyst UI is a premium component library from Tailwind CSS."
-echo "It includes 27 accessible React components (buttons, forms, dialogs, etc.)"
-echo ""
-
-has_tsx_files() {
-  local src="$1"
-  compgen -G "$src"/*.tsx >/dev/null 2>&1
-}
-
-resolve_catalyst_source() {
-  local src="$1"
-  if [[ -d "$src" ]] && has_tsx_files "$src"; then
-    echo "$src"
-    return 0
-  fi
-  if [[ -d "$src/typescript" ]] && has_tsx_files "$src/typescript"; then
-    echo "$src/typescript"
-    return 0
-  fi
-  return 1
-}
-
-if CATALYST_RESOLVED="$(resolve_catalyst_source "$CATALYST_SOURCE")"; then
-  if [[ "$CATALYST_RESOLVED" != "$CATALYST_SOURCE" ]]; then
-    echo "Adjusted Catalyst source to: $CATALYST_RESOLVED"
-  fi
-  CATALYST_SOURCE="$CATALYST_RESOLVED"
-  echo "Catalyst source found at: $CATALYST_SOURCE"
-  INCLUDE_CATALYST="y"
-else
-  echo "Catalyst source not found at: $CATALYST_SOURCE"
-  echo "Set CATALYST_SOURCE to include: CATALYST_SOURCE=\"/path\" ./scripts/scaffold-frontend.sh"
-  INCLUDE_CATALYST="n"
-fi
 
 ################################################################################
 # Step 7: Create frontend src directory structure
