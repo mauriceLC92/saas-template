@@ -11,6 +11,9 @@ set -euo pipefail
 # 4. Update backend references (go.mod, Dockerfile, docker-compose.yml)
 # 5. Cleanup old files
 # 6. Run npm install
+# 7. Remove template-specific files (CLAUDE.md, README.md, NEW_PROJECT_PLAN.md)
+# 8. Initialize fresh git repository with single initial commit
+# 9. Rename project folder to match project name
 #
 # Run from the repo root: ./scripts/scaffold-frontend.sh
 ################################################################################
@@ -40,14 +43,6 @@ validate_project_name() {
   return 0
 }
 
-# Validate Go module path (basic format check)
-validate_go_module() {
-  local module="$1"
-  if [[ ! "$module" =~ ^[a-zA-Z0-9.-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
-    return 1
-  fi
-  return 0
-}
 
 ################################################################################
 # Precondition checks
@@ -82,24 +77,13 @@ while true; do
   fi
 done
 
-# Prompt for Go module path
-while true; do
-  read -rp "Enter Go module path (e.g., github.com/username/$PROJECT_NAME): " GO_MODULE
-  if [[ -z "$GO_MODULE" ]]; then
-    echo "Go module path cannot be empty."
-    continue
-  fi
-  if validate_go_module "$GO_MODULE"; then
-    break
-  else
-    echo "Invalid Go module path. Expected format: github.com/org/project"
-  fi
-done
+# Auto-generate Go module path from project name
+GO_MODULE="github.com/mauriceLC92/$PROJECT_NAME"
 
 echo ""
 echo "Configuration:"
 echo "  Project name: $PROJECT_NAME"
-echo "  Go module:    $GO_MODULE"
+echo "  Go module:    $GO_MODULE (auto-generated)"
 echo ""
 read -rp "Proceed with these settings? (y/N): " CONFIRM
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
@@ -1403,13 +1387,81 @@ npm install
 echo "Dependencies installed"
 
 ################################################################################
+# Step 24: Remove template-specific files
+################################################################################
+
+print_header "Step 24: Removing template-specific files"
+
+rm -f NEW_PROJECT_PLAN.md
+rm -f CLAUDE.md
+rm -f README.md
+echo "Removed: NEW_PROJECT_PLAN.md, CLAUDE.md, README.md"
+
+################################################################################
+# Step 25: Fresh git history
+################################################################################
+
+print_header "Step 25: Initializing fresh git repository"
+
+# Remove existing git history
+rm -rf .git
+
+# Initialize new repository
+git init -q
+
+# Create initial commit
+git add .
+git commit -q -m "Initial commit
+
+Scaffolded from saas-template
+Project: $PROJECT_NAME
+Module: $GO_MODULE"
+
+echo "Fresh git repository initialized with initial commit"
+
+################################################################################
+# Step 26: Rename project folder
+################################################################################
+
+print_header "Step 26: Renaming project folder"
+
+CURRENT_DIR=$(basename "$PWD")
+if [ "$CURRENT_DIR" != "$PROJECT_NAME" ]; then
+  PARENT_DIR=$(dirname "$PWD")
+  NEW_PATH="$PARENT_DIR/$PROJECT_NAME"
+
+  if [ -d "$NEW_PATH" ]; then
+    echo "Warning: $NEW_PATH already exists. Folder not renamed."
+    echo "You can manually rename later: mv $CURRENT_DIR $PROJECT_NAME"
+  else
+    # Move to parent, rename, and update PWD
+    cd "$PARENT_DIR"
+    mv "$CURRENT_DIR" "$PROJECT_NAME"
+    cd "$PROJECT_NAME"
+    echo "Folder renamed: $CURRENT_DIR → $PROJECT_NAME"
+  fi
+else
+  echo "Folder already named: $PROJECT_NAME"
+fi
+
+################################################################################
 # Post-setup guidance
 ################################################################################
 
-print_header "Setup Complete!"
-
 echo ""
-echo "Your project '$PROJECT_NAME' has been configured."
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║                    Scaffold Complete!                          ║"
+echo "╠════════════════════════════════════════════════════════════════╣"
+echo "║  Project: $PROJECT_NAME"
+echo "║  Location: $(pwd)"
+echo "╠════════════════════════════════════════════════════════════════╣"
+echo "║  Next steps:                                                   ║"
+echo "║    1. cd $(pwd)"
+echo "║    2. Create GitHub repo: gh repo create $PROJECT_NAME"
+echo "║    3. git remote add origin <your-repo-url>"
+echo "║    4. git push -u origin main"
+echo "║    5. npm run dev                                              ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
 echo ""
 echo "Remaining manual steps:"
 echo ""
@@ -1451,5 +1503,4 @@ echo "  - Zod schemas for validation (auth, user, settings)"
 echo "  - Theme management (light/dark/system)"
 echo ""
 echo "Build your login/register UI in frontend/src/pages/home.tsx"
-echo "See NEW_PROJECT_PLAN.md for usage examples"
 echo ""
