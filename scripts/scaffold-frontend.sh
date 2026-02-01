@@ -89,26 +89,22 @@ echo "Configuration:"
 echo "  Project name: $PROJECT_NAME"
 echo "  Go module:    $GO_MODULE (auto-generated)"
 echo ""
-read -rp "Proceed with these settings? (y/N): " CONFIRM
+read -rp "Proceed with these settings? (Y/n): " CONFIRM
+CONFIRM=${CONFIRM:-y}  # Default to 'y' if empty
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
   echo "Aborted."
   exit 0
 fi
 
 ################################################################################
-# Check for existing frontend directory
+# Clean up existing frontend directory
 ################################################################################
 
 if [[ -d "frontend" ]]; then
   echo ""
-  echo "Warning: 'frontend/' directory already exists."
-  read -rp "Delete existing frontend/ and continue? (y/N): " DELETE_FRONTEND
-  if [[ "$DELETE_FRONTEND" =~ ^[Yy]$ ]]; then
-    rm -rf frontend
-    echo "Deleted existing frontend/ directory."
-  else
-    die "Cannot proceed with existing frontend/ directory."
-  fi
+  echo "Removing existing frontend/ directory..."
+  rm -rf frontend
+  echo "Deleted existing frontend/ directory."
 fi
 
 ################################################################################
@@ -359,7 +355,8 @@ echo ""
 
 if [[ -d "$CATALYST_SOURCE" ]]; then
   echo "Catalyst source found at: $CATALYST_SOURCE"
-  read -rp "Include Catalyst UI components? (y/N): " INCLUDE_CATALYST
+  read -rp "Include Catalyst UI components? (Y/n): " INCLUDE_CATALYST
+  INCLUDE_CATALYST=${INCLUDE_CATALYST:-y}  # Default to 'y' if empty
 else
   echo "Catalyst source not found at: $CATALYST_SOURCE"
   echo "Set CATALYST_SOURCE to include: CATALYST_SOURCE=/path ./scripts/scaffold-frontend.sh"
