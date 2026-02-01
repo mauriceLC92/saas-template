@@ -206,12 +206,26 @@ Replaces `saas-template` with your project name:
 - Service name
 - Container name
 
-### Step 22: Cleanup
+### Step 22: Update fly.toml
+
+Updates the Fly.io configuration with your project name:
+- `app = "saas-template"` → `app = "your-project-name"`
+
+### Step 23: Remove Template-Specific GitHub Files
+
+Removes GitHub workflow and scripts that are only relevant to the template repo:
+- `.github/workflows/sync-dependencies.yml` - Syncs deps from upstream repo
+- `.github/scripts/sync-dependencies.sh` - Sync implementation script
+- `.github/scripts/generate-pr-description.sh` - PR description generator
+
+Also cleans up empty `.github/` directories after removal.
+
+### Step 24: Cleanup
 
 - Removes root `index.html` if it exists (old UI entry point)
 - The new entry point is `frontend/index.html`
 
-### Step 23: Install Dependencies
+### Step 25: Install Dependencies
 
 - Runs `npm install` automatically
 - You're ready to start development
@@ -672,7 +686,7 @@ Potential enhancements for the scaffold script:
 - [x] ~~**API service template**: Generate typed PocketBase client wrapper~~ (Now included!)
 - [ ] **Test setup**: Add Vitest configuration option
 - [ ] **CI/CD templates**: GitHub Actions workflow for build/deploy
-- [ ] **Fly.io config**: Auto-update fly.toml with project name
+- [x] ~~**Fly.io config**: Auto-update fly.toml with project name~~ (Now included!)
 
 ---
 

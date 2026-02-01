@@ -1363,10 +1363,55 @@ rm -f docker-compose.yml.bak
 echo "Updated docker-compose.yml service and container names"
 
 ################################################################################
-# Step 22: Cleanup
+# Step 22: Update fly.toml
 ################################################################################
 
-print_header "Step 22: Cleanup"
+print_header "Step 22: Updating fly.toml"
+
+sed -i.bak "s|^app = \"saas-template\"|app = \"$PROJECT_NAME\"|g" fly.toml
+rm -f fly.toml.bak
+
+echo "Updated fly.toml app name to: $PROJECT_NAME"
+
+################################################################################
+# Step 23: Remove template-specific GitHub files
+################################################################################
+
+print_header "Step 23: Removing template-specific GitHub files"
+
+# Remove sync-dependencies workflow and scripts (only relevant to saas-template repo)
+rm -f .github/workflows/sync-dependencies.yml
+rm -f .github/scripts/sync-dependencies.sh
+rm -f .github/scripts/generate-pr-description.sh
+
+# Clean up empty directories if scripts folder is now empty
+if [ -d ".github/scripts" ] && [ -z "$(ls -A .github/scripts 2>/dev/null)" ]; then
+  rmdir .github/scripts
+  echo "Removed empty .github/scripts directory"
+fi
+
+# Clean up empty workflows directory if now empty
+if [ -d ".github/workflows" ] && [ -z "$(ls -A .github/workflows 2>/dev/null)" ]; then
+  rmdir .github/workflows
+  echo "Removed empty .github/workflows directory"
+fi
+
+# Clean up empty .github directory if now empty
+if [ -d ".github" ] && [ -z "$(ls -A .github 2>/dev/null)" ]; then
+  rmdir .github
+  echo "Removed empty .github directory"
+fi
+
+echo "Removed template-specific GitHub files:"
+echo "  - .github/workflows/sync-dependencies.yml"
+echo "  - .github/scripts/sync-dependencies.sh"
+echo "  - .github/scripts/generate-pr-description.sh"
+
+################################################################################
+# Step 24: Cleanup
+################################################################################
+
+print_header "Step 24: Cleanup"
 
 # Remove root index.html if it exists
 if [[ -f "index.html" ]]; then
@@ -1377,20 +1422,20 @@ else
 fi
 
 ################################################################################
-# Step 23: Run npm install
+# Step 25: Run npm install
 ################################################################################
 
-print_header "Step 23: Installing Dependencies"
+print_header "Step 25: Installing Dependencies"
 
 npm install
 
 echo "Dependencies installed"
 
 ################################################################################
-# Step 24: Remove template-specific files
+# Step 26: Remove template-specific files
 ################################################################################
 
-print_header "Step 24: Removing template-specific files"
+print_header "Step 26: Removing template-specific files"
 
 rm -f NEW_PROJECT_PLAN.md
 rm -f CLAUDE.md
@@ -1398,10 +1443,10 @@ rm -f README.md
 echo "Removed: NEW_PROJECT_PLAN.md, CLAUDE.md, README.md"
 
 ################################################################################
-# Step 25: Fresh git history
+# Step 27: Fresh git history
 ################################################################################
 
-print_header "Step 25: Initializing fresh git repository"
+print_header "Step 27: Initializing fresh git repository"
 
 # Remove existing git history
 rm -rf .git
@@ -1420,10 +1465,10 @@ Module: $GO_MODULE"
 echo "Fresh git repository initialized with initial commit"
 
 ################################################################################
-# Step 26: Rename project folder
+# Step 28: Rename project folder
 ################################################################################
 
-print_header "Step 26: Renaming project folder"
+print_header "Step 28: Renaming project folder"
 
 CURRENT_DIR=$(basename "$PWD")
 if [ "$CURRENT_DIR" != "$PROJECT_NAME" ]; then
