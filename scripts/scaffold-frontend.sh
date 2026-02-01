@@ -352,13 +352,34 @@ echo "Catalyst UI is a premium component library from Tailwind CSS."
 echo "It includes 27 accessible React components (buttons, forms, dialogs, etc.)"
 echo ""
 
-if [[ -d "$CATALYST_SOURCE" ]]; then
+has_tsx_files() {
+  local src="$1"
+  compgen -G "$src"/*.tsx >/dev/null 2>&1
+}
+
+resolve_catalyst_source() {
+  local src="$1"
+  if [[ -d "$src" ]] && has_tsx_files "$src"; then
+    echo "$src"
+    return 0
+  fi
+  if [[ -d "$src/typescript" ]] && has_tsx_files "$src/typescript"; then
+    echo "$src/typescript"
+    return 0
+  fi
+  return 1
+}
+
+if CATALYST_RESOLVED="$(resolve_catalyst_source "$CATALYST_SOURCE")"; then
+  if [[ "$CATALYST_RESOLVED" != "$CATALYST_SOURCE" ]]; then
+    echo "Adjusted Catalyst source to: $CATALYST_RESOLVED"
+  fi
+  CATALYST_SOURCE="$CATALYST_RESOLVED"
   echo "Catalyst source found at: $CATALYST_SOURCE"
-  read -rp "Include Catalyst UI components? (Y/n): " INCLUDE_CATALYST
-  INCLUDE_CATALYST=${INCLUDE_CATALYST:-y}  # Default to 'y' if empty
+  INCLUDE_CATALYST="y"
 else
   echo "Catalyst source not found at: $CATALYST_SOURCE"
-  echo "Set CATALYST_SOURCE to include: CATALYST_SOURCE=/path ./scripts/scaffold-frontend.sh"
+  echo "Set CATALYST_SOURCE to include: CATALYST_SOURCE=\"/path\" ./scripts/scaffold-frontend.sh"
   INCLUDE_CATALYST="n"
 fi
 
