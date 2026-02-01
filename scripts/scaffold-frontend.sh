@@ -18,7 +18,7 @@ set -euo pipefail
 ################################################################################
 
 # Catalyst UI Kit configuration
-CATALYST_SOURCE="${CATALYST_SOURCE:-$HOME/Downloads/catalyst-ui-kit/typescript}"
+CATALYST_SOURCE="${CATALYST_SOURCE:-$HOME/Downloads/adamwathanss-tuibeta 2/adamwathanss-tuibeta/catalyst-ui-kit}"
 INCLUDE_CATALYST=""
 
 die() {
