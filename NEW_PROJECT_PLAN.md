@@ -28,7 +28,7 @@ configuration as manual steps.
 - **Enhanced DX**: ESLint, Prettier, and TypeScript configured for React development
 - **Single binary deploy**: Frontend embeds into Go binary for production
 - **QoL features included**: TanStack Router + Query, PocketBase typed client, auth services/hooks, settings services/hooks, Zod schemas
-- **Optional Catalyst UI Kit**: Premium accessible component library integration available
+- **Catalyst UI Kit included**: Premium accessible component library integration (always enabled)
 
 ---
 
@@ -65,9 +65,7 @@ The scaffold script automates the entire setup process:
 
 ```bash
 # From the project directory
-./scripts/scaffold-frontend.sh
-
-# Optional: Include Catalyst UI components
+# Catalyst UI components are required
 CATALYST_SOURCE=/path/to/catalyst/typescript ./scripts/scaffold-frontend.sh
 ```
 
@@ -81,11 +79,11 @@ The script will prompt you for:
    - Used for: backend/go.mod module declaration
    - Format: `domain/org/project`
 
-3. **Catalyst UI Kit** (prompted only if CATALYST_SOURCE is set)
-   - Choose whether to include the Catalyst UI component library
-   - Adds @headlessui/react, framer-motion, and clsx if selected
+3. **Catalyst UI Kit** (always included)
+   - Requires `CATALYST_SOURCE` to be set
+   - Adds @headlessui/react, framer-motion, and clsx
 
-After confirmation, the script runs automatically and installs dependencies.
+After confirmation, the script runs automatically and installs dependencies at the end.
 
 ---
 
@@ -98,7 +96,7 @@ The scaffold script performs these steps in order (27 total steps):
 ### Step 1: Scaffold Vite React-TS Frontend
 
 - Creates temporary directory
-- Runs `npm create vite@latest` with `react-ts` template
+- Runs `npm create vite@latest --no-install` with `react-ts` template
 - Copies only `index.html`, `public/`, and `src/` to `frontend/`
 - Template config files are discarded (we use root-level configs)
 
@@ -115,7 +113,7 @@ Replaces with minimal config:
 - Sets project name from your input
 - **Merges dependencies**: Vite template deps + extra dev tooling
 - Updates scripts with your binary name (`build:server`, `preview`)
-- Conditionally adds Catalyst dependencies if user opts in
+- Adds Catalyst dependencies (always enabled)
 
 **Dependency strategy:**
 - Vite template dependencies are preserved (app works out of the box)
@@ -124,9 +122,9 @@ Replaces with minimal config:
   - `@tanstack/react-router` - Type-safe file-based routing
   - `pocketbase` - PocketBase JavaScript SDK
   - `zod` - Runtime type validation for schemas
-  - `@headlessui/react` - Catalyst UI Kit (if enabled)
-  - `framer-motion` - Catalyst animation library (if enabled)
-  - `clsx` - Catalyst utility for className management (if enabled)
+  - `@headlessui/react` - Catalyst UI Kit
+  - `framer-motion` - Catalyst animation library
+  - `clsx` - Catalyst utility for className management
 - Extra dev dependencies are merged in:
   - `@tanstack/react-query-devtools` - Query devtools
   - `@tanstack/react-router-devtools` - Router devtools
@@ -158,15 +156,15 @@ Replaces with full config:
 - `@/*` path alias matching vite.config.ts
 - Includes only `frontend/src`
 
-### Optional: Catalyst UI Kit
+### Catalyst UI Kit (Required)
 
-If you set the `CATALYST_SOURCE` environment variable, the script will prompt you to include the Catalyst UI component library. This premium accessible component library provides production-ready components built with Tailwind CSS and HeadlessUI.
+The script requires the `CATALYST_SOURCE` environment variable to include the Catalyst UI component library. This premium accessible component library provides production-ready components built with Tailwind CSS and HeadlessUI.
 
 **What you'll be asked:**
-- Whether to integrate Catalyst UI components into your project
-- If yes, dependencies (`@headlessui/react`, `framer-motion`, `clsx`) are automatically added
+- Confirmation of the `CATALYST_SOURCE` path
+- Dependencies (`@headlessui/react`, `framer-motion`, `clsx`) are automatically added
 
-**Step 7a: Copy Catalyst UI Components** (conditionally runs if user opts in)
+**Step 7a: Copy Catalyst UI Components**
 - Copies pre-built Catalyst components from the provided source directory
 - Creates `frontend/src/components/` directory with all UI components
 - Includes buttons, forms, dialogs, tabs, and other common components
@@ -269,7 +267,7 @@ Also cleans up empty `.github/` directories after removal.
 
 ### Step 25: Install Dependencies
 
-- Runs `npm install` automatically
+- Runs `npm install` once after package.json merge and Catalyst copy
 - You're ready to start development
 
 ---
@@ -529,7 +527,7 @@ your-project/
 ├── frontend/
 │   ├── public/            # Static assets
 │   ├── src/
-│   │   ├── components/    # Catalyst UI components (if enabled)
+│   │   ├── components/    # Catalyst UI components
 │   │   ├── hooks/
 │   │   │   ├── use-auth.ts       # Auth hook (login, logout, register, etc.)
 │   │   │   └── use-settings.ts   # Settings hook with optimistic updates
@@ -586,10 +584,10 @@ From this repo to your new repo:
 ### 2. Scaffold Vite Frontend
 
 ```bash
-npm create vite@latest frontend -- --template react-ts --no-interactive
+npm create vite@latest frontend -- --template react-ts --no-interactive --no-install
 ```
 
-The `--no-interactive` flag prevents prompts and auto-installation, allowing the scaffolding to run non-interactively. This is the officially supported way to avoid interactive prompts in create-vite.
+Use `--no-interactive` to prevent prompts and `--no-install` to prevent auto-installation. This keeps the install step aligned with the package.json merge.
 
 Then remove the config files from `frontend/` (we use root-level configs):
 - `frontend/vite.config.ts`
@@ -720,7 +718,7 @@ const handleLogin = async (data) => {
 
 ### Using Catalyst UI Components
 
-If you enabled Catalyst UI Kit during scaffolding, you have access to a comprehensive component library:
+Catalyst UI Kit is included by default, so you have access to a comprehensive component library:
 
 ```tsx
 // Import Catalyst components
@@ -763,8 +761,8 @@ For complete documentation and API reference, visit https://catalyst.tailwindui.
 
 Potential enhancements for the scaffold script:
 
-- [x] **Tailwind CSS option**: Now included via Catalyst UI Kit
-- [x] **Catalyst UI Kit option**: Premium accessible component library (Now included!)
+- [x] **Tailwind CSS**: Included via Catalyst UI Kit
+- [x] **Catalyst UI Kit**: Premium accessible component library (Included by default)
 - [x] ~~**TanStack integration**: Option to add Router + Query setup~~ (Now included!)
 - [ ] **Auth pages scaffolding**: Generate login/register page UI components
 - [x] ~~**API service template**: Generate typed PocketBase client wrapper~~ (Now included!)
