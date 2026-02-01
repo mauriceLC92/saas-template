@@ -28,6 +28,7 @@ configuration as manual steps.
 - **Enhanced DX**: ESLint, Prettier, and TypeScript configured for React development
 - **Single binary deploy**: Frontend embeds into Go binary for production
 - **QoL features included**: TanStack Router + Query, PocketBase typed client, auth services/hooks, settings services/hooks, Zod schemas
+- **Optional Catalyst UI Kit**: Premium accessible component library integration available
 
 ---
 
@@ -51,6 +52,9 @@ The scaffold script automates the entire setup process:
 ```bash
 # From the repo root
 ./scripts/scaffold-frontend.sh
+
+# Optional: Include Catalyst UI components
+CATALYST_SOURCE=/path/to/catalyst/typescript ./scripts/scaffold-frontend.sh
 ```
 
 The script will prompt you for:
@@ -62,6 +66,10 @@ The script will prompt you for:
 2. **Go module path** (e.g., `github.com/username/my-saas-app`)
    - Used for: backend/go.mod module declaration
    - Format: `domain/org/project`
+
+3. **Catalyst UI Kit** (prompted only if CATALYST_SOURCE is set)
+   - Choose whether to include the Catalyst UI component library
+   - Adds @headlessui/react, framer-motion, and clsx if selected
 
 After confirmation, the script runs automatically and installs dependencies.
 
@@ -91,6 +99,7 @@ Replaces with minimal config:
 - Sets project name from your input
 - **Merges dependencies**: Vite template deps + extra dev tooling
 - Updates scripts with your binary name (`build:server`, `preview`)
+- Conditionally adds Catalyst dependencies if user opts in
 
 **Dependency strategy:**
 - Vite template dependencies are preserved (app works out of the box)
@@ -99,6 +108,9 @@ Replaces with minimal config:
   - `@tanstack/react-router` - Type-safe file-based routing
   - `pocketbase` - PocketBase JavaScript SDK
   - `zod` - Runtime type validation for schemas
+  - `@headlessui/react` - Catalyst UI Kit (if enabled)
+  - `framer-motion` - Catalyst animation library (if enabled)
+  - `clsx` - Catalyst utility for className management (if enabled)
 - Extra dev dependencies are merged in:
   - `@tanstack/react-query-devtools` - Query devtools
   - `@tanstack/react-router-devtools` - Router devtools
@@ -129,6 +141,20 @@ Replaces with full config:
 - Strict mode enabled
 - `@/*` path alias matching vite.config.ts
 - Includes only `frontend/src`
+
+### Optional: Catalyst UI Kit
+
+If you set the `CATALYST_SOURCE` environment variable, the script will prompt you to include the Catalyst UI component library. This premium accessible component library provides production-ready components built with Tailwind CSS and HeadlessUI.
+
+**What you'll be asked:**
+- Whether to integrate Catalyst UI components into your project
+- If yes, dependencies (`@headlessui/react`, `framer-motion`, `clsx`) are automatically added
+
+**Step 7a: Copy Catalyst UI Components** (conditionally runs if user opts in)
+- Copies pre-built Catalyst components from the provided source directory
+- Creates `frontend/src/components/` directory with all UI components
+- Includes buttons, forms, dialogs, tabs, and other common components
+- All components are fully typed and ready to use
 
 ### Steps 7-18: Create Frontend QoL Features
 
@@ -487,6 +513,7 @@ your-project/
 ├── frontend/
 │   ├── public/            # Static assets
 │   ├── src/
+│   │   ├── components/    # Catalyst UI components (if enabled)
 │   │   ├── hooks/
 │   │   │   ├── use-auth.ts       # Auth hook (login, logout, register, etc.)
 │   │   │   └── use-settings.ts   # Settings hook with optimistic updates
@@ -673,14 +700,53 @@ const handleLogin = async (data) => {
 }
 ```
 
+### Using Catalyst UI Components
+
+If you enabled Catalyst UI Kit during scaffolding, you have access to a comprehensive component library:
+
+```tsx
+// Import Catalyst components
+import { Button } from '@/components/button'
+import { Input } from '@/components/input'
+import { Dialog, DialogTitle, DialogBody } from '@/components/dialog'
+
+// Example usage with different variants
+function MyComponent() {
+  return (
+    <div className='space-y-4'>
+      <Button color='blue'>Primary Button</Button>
+      <Button color='indigo' outline>
+        Secondary Button
+      </Button>
+      <Input placeholder='Enter text...' />
+
+      <Dialog open={isOpen} onClose={setIsOpen}>
+        <DialogTitle>Confirm Action</DialogTitle>
+        <DialogBody>Are you sure?</DialogBody>
+      </Dialog>
+    </div>
+  )
+}
+```
+
+Available components include:
+- **Forms**: Input, Textarea, Select, Checkbox, RadioGroup, Switch
+- **Buttons**: Button with multiple color and size variants
+- **Modals**: Dialog, Drawer, Modal
+- **Data Display**: Table, Badge, Avatar
+- **Navigation**: Tab, Menu, Popover
+- **Feedback**: Tooltip, Alert, Toast
+
+For complete documentation and API reference, visit https://catalyst.tailwindui.com/docs
+
 ---
 
 ## Future Improvements
 
 Potential enhancements for the scaffold script:
 
-- [ ] **Tailwind CSS option**: Prompt to include Tailwind with proper config
-- [ ] **shadcn/ui option**: Prompt to scaffold with UI component library
+- [x] **Tailwind CSS option**: Now included via Catalyst UI Kit
+- [x] **Catalyst UI Kit option**: Premium accessible component library (Now included!)
 - [x] ~~**TanStack integration**: Option to add Router + Query setup~~ (Now included!)
 - [ ] **Auth pages scaffolding**: Generate login/register page UI components
 - [x] ~~**API service template**: Generate typed PocketBase client wrapper~~ (Now included!)

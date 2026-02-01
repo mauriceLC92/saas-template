@@ -18,6 +18,10 @@ set -euo pipefail
 # Run from the repo root: ./scripts/scaffold-frontend.sh
 ################################################################################
 
+# Catalyst UI Kit configuration
+CATALYST_SOURCE="${CATALYST_SOURCE:-$HOME/Downloads/catalyst-ui-kit/typescript}"
+INCLUDE_CATALYST=""
+
 die() {
   echo "Error: $*" >&2
   exit 1
@@ -186,6 +190,16 @@ EXTRA_DEPS='{
   "zod": "^4.1.13"
 }'
 
+# Add Catalyst dependencies if user opted in
+if [[ "$INCLUDE_CATALYST" =~ ^[Yy]$ ]]; then
+  CATALYST_DEPS='{
+    "@headlessui/react": "^2.2.0",
+    "framer-motion": "^11.15.0",
+    "clsx": "^2.1.1"
+  }'
+  EXTRA_DEPS=$(echo "$EXTRA_DEPS" "$CATALYST_DEPS" | jq -s 'add')
+fi
+
 # Extra dev dependencies for better DX (ESLint plugins, Prettier, devtools, etc.)
 # These are merged with Vite's defaults, with our versions taking precedence
 EXTRA_DEV_DEPS='{
@@ -334,6 +348,25 @@ TSCONFIG_EOF
 echo "Updated tsconfig.json"
 
 ################################################################################
+# Optional: Catalyst UI Kit
+################################################################################
+
+print_header "Optional: Catalyst UI Kit"
+
+echo "Catalyst UI is a premium component library from Tailwind CSS."
+echo "It includes 27 accessible React components (buttons, forms, dialogs, etc.)"
+echo ""
+
+if [[ -d "$CATALYST_SOURCE" ]]; then
+  echo "Catalyst source found at: $CATALYST_SOURCE"
+  read -rp "Include Catalyst UI components? (y/N): " INCLUDE_CATALYST
+else
+  echo "Catalyst source not found at: $CATALYST_SOURCE"
+  echo "Set CATALYST_SOURCE to include: CATALYST_SOURCE=/path ./scripts/scaffold-frontend.sh"
+  INCLUDE_CATALYST="n"
+fi
+
+################################################################################
 # Step 7: Create frontend src directory structure
 ################################################################################
 
@@ -345,8 +378,43 @@ mkdir -p frontend/src/services
 mkdir -p frontend/src/hooks
 mkdir -p frontend/src/types
 mkdir -p frontend/src/pages
+mkdir -p frontend/src/components
 
-echo "Created frontend/src/{lib,schemas,services,hooks,types,pages}"
+echo "Created frontend/src/{lib,schemas,services,hooks,types,pages,components}"
+
+################################################################################
+# Step 7a: Copy Catalyst UI Components (if enabled)
+################################################################################
+
+if [[ "$INCLUDE_CATALYST" =~ ^[Yy]$ ]]; then
+  print_header "Step 7a: Copying Catalyst UI Components"
+
+  # Copy all TypeScript component files
+  cp "$CATALYST_SOURCE"/*.tsx frontend/src/components/
+
+  CATALYST_COUNT=$(ls -1 frontend/src/components/*.tsx 2>/dev/null | wc -l | tr -d ' ')
+  echo "Copied $CATALYST_COUNT Catalyst components to frontend/src/components/"
+
+  # Replace link.tsx with TanStack Router integration
+  cat > frontend/src/components/link.tsx << 'CATALYST_LINK_EOF'
+import * as Headless from '@headlessui/react'
+import { Link as TanStackLink, LinkProps } from '@tanstack/react-router'
+import React, { forwardRef } from 'react'
+
+export const Link = forwardRef(function Link(
+  props: LinkProps & React.ComponentPropsWithoutRef<'a'>,
+  ref: React.ForwardedRef<HTMLAnchorElement>
+) {
+  return (
+    <Headless.DataInteractive>
+      <TanStackLink {...props} ref={ref} />
+    </Headless.DataInteractive>
+  )
+})
+CATALYST_LINK_EOF
+
+  echo "  Updated link.tsx for TanStack Router"
+fi
 
 ################################################################################
 # Step 8: Create lib/set-theme.ts
@@ -1546,6 +1614,15 @@ echo "  - Auth hook (useAuth: login, logout, register, password reset)"
 echo "  - Settings hook (useSettings: with optimistic updates)"
 echo "  - Zod schemas for validation (auth, user, settings)"
 echo "  - Theme management (light/dark/system)"
+
+if [[ "$INCLUDE_CATALYST" =~ ^[Yy]$ ]]; then
+  echo ""
+  echo "Catalyst UI Components:"
+  echo "  - $CATALYST_COUNT components in frontend/src/components/"
+  echo "  - Import: import { Button } from '@/components/button'"
+  echo "  - Docs: https://catalyst.tailwindui.com/docs"
+fi
+
 echo ""
 echo "Build your login/register UI in frontend/src/pages/home.tsx"
 echo ""
