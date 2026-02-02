@@ -69,7 +69,7 @@ Perfect for entrepreneurs, indie hackers, or development teams who want to skip 
 
 ### Prerequisites
 - Go 1.25+
-- Node.js 24+ or Bun 1.3+ or Bun 1.3+ or Bun (or Bun)
+- Node.js 24+ or Bun 1.3+ or Bun 1.3+ or Bun 1.3+ or Bun (or Bun)
 - Docker (optional)
 
 ### Quick Start
