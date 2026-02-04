@@ -104,6 +104,7 @@ The scaffold script performs these steps in order (27 total steps):
 
 Replaces with minimal config:
 - `root: 'frontend'` - Vite looks in frontend/ for source
+- `plugins: [react(), tailwindcss()]` - React + Tailwind CSS v4 via `@tailwindcss/vite`
 - `build.outDir: '../backend/dist'` - Output for Go embed
 - `@` path alias - Import from `@/components/...`
 - `/api` proxy - Routes API calls to backend during dev
@@ -126,6 +127,9 @@ Replaces with minimal config:
   - `framer-motion` - Catalyst animation library
   - `clsx` - Catalyst utility for className management
 - Extra dev dependencies are merged in:
+  - `@tailwindcss/vite` - Tailwind CSS v4 Vite plugin
+  - `tailwindcss` - Tailwind CSS v4
+  - `tailwind-merge` - Utility for merging Tailwind classes (used by Catalyst)
   - `@tanstack/react-query-devtools` - Query devtools
   - `@tanstack/react-router-devtools` - Router devtools
   - `@typescript-eslint/*` - TypeScript linting
@@ -384,6 +388,7 @@ npm run pretty  # Prettier
 ### vite.config.ts
 
 ```ts
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
@@ -394,7 +399,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: 'frontend',
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     build: {
       outDir: '../backend/dist',
       emptyOutDir: true

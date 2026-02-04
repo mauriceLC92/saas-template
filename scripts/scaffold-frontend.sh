@@ -178,6 +178,7 @@ echo "Frontend scaffolded into ./frontend"
 print_header "Step 2: Updating vite.config.ts"
 
 cat > vite.config.ts << 'VITE_CONFIG_EOF'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
@@ -188,7 +189,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     root: 'frontend',
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     build: {
       outDir: '../backend/dist',
       emptyOutDir: true
@@ -241,6 +242,7 @@ fi
 # Extra dev dependencies for better DX (ESLint plugins, Prettier, devtools, etc.)
 # These are merged with Vite's defaults, with our versions taking precedence
 EXTRA_DEV_DEPS='{
+  "@tailwindcss/vite": "^4.1.18",
   "@tanstack/react-query-devtools": "^5.84.2",
   "@tanstack/react-router-devtools": "^1.131.5",
   "@typescript-eslint/eslint-plugin": "^8.49.0",
@@ -250,7 +252,9 @@ EXTRA_DEV_DEPS='{
   "eslint-plugin-react-hooks": "^5.2.0",
   "eslint-plugin-react-refresh": "^0.4.20",
   "globals": "^16.3.0",
-  "prettier": "^3.7.4"
+  "prettier": "^3.7.4",
+  "tailwind-merge": "^3.3.1",
+  "tailwindcss": "^4.1.18"
 }'
 
 # Merge Vite deps with our extras (our extras take precedence)
