@@ -85,7 +85,10 @@ export default function PrivacyPolicyPage() {
           </li>
           <li>
             <strong>Website</strong> refers to Saas Template, accessible from{' '}
-            <a href='https://saas-template.com' rel='noreferrer' target='_blank'>
+            <a
+              href='https://saas-template.com'
+              rel='noreferrer'
+              target='_blank'>
               https://saas-template.com
             </a>
           </li>
