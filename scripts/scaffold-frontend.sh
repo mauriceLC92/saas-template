@@ -223,6 +223,7 @@ VITE_DEV_DEPS=$(jq '.devDependencies // {}' "$VITE_PKG")
 
 # Extra production dependencies for QoL features (TanStack, PocketBase, Zod)
 EXTRA_DEPS='{
+  "@heroicons/react": "^2.2.0",
   "@tanstack/react-query": "^5.84.2",
   "@tanstack/react-router": "^1.131.27",
   "pocketbase": "^0.26.2",
@@ -1403,6 +1404,13 @@ rm -f frontend/src/App.css
 rm -f frontend/src/main.tsx
 
 echo "Removed App.tsx, App.css, and main.tsx (replaced by root.tsx and router)"
+
+# Create clean index.css with only Tailwind import (replaces Vite template styles)
+cat > frontend/src/index.css << 'INDEX_CSS_EOF'
+@import "tailwindcss";
+INDEX_CSS_EOF
+
+echo "Created frontend/src/index.css with Tailwind CSS import"
 
 ################################################################################
 # Step 19: Update backend/go.mod and Go import paths

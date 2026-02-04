@@ -119,6 +119,7 @@ Replaces with minimal config:
 **Dependency strategy:**
 - Vite template dependencies are preserved (app works out of the box)
 - Extra production dependencies are merged in:
+  - `@heroicons/react` - SVG icon library from the makers of Tailwind CSS
   - `@tanstack/react-query` - Server state management
   - `@tanstack/react-router` - Type-safe file-based routing
   - `pocketbase` - PocketBase JavaScript SDK
@@ -228,6 +229,7 @@ The scaffold creates a complete frontend foundation:
 
 **Step 18: Cleanup**
 - Removes Vite template files (App.tsx, App.css, main.tsx)
+- Creates clean `index.css` with only `@import "tailwindcss";` (replaces Vite template styles)
 
 ### Step 19: Update backend/go.mod and Go Imports
 
@@ -554,7 +556,7 @@ your-project/
 │   │   │   └── pocketbase.ts     # Typed PocketBase client
 │   │   ├── types/
 │   │   │   └── pocketbase-types.ts # TypedPocketBase definitions
-│   │   ├── index.css             # Vite template styles
+│   │   ├── index.css             # Tailwind CSS import
 │   │   ├── root.tsx              # Entry point (mounts Router)
 │   │   ├── root-layout.tsx       # App layout wrapper
 │   │   └── router.tsx            # TanStack Router setup
