@@ -191,12 +191,17 @@ jobs:
 
       - name: Update sync tracker
         if: steps.context.outputs.has_new_commits == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           LATEST_SHA="${{ steps.context.outputs.latest_sha }}"
           TRACKER_FILE=".github/last-sync-commit"
 
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+          # Set authenticated remote URL
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
 
           git stash --include-untracked || true
           git checkout master
