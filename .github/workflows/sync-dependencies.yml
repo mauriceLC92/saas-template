@@ -2,178 +2,213 @@ name: Sync Dependencies from longhabit
 
 on:
   schedule:
-    # Runs every Monday at 6:00 AM UTC
-    - cron: '0 6 * * 1'
-  workflow_dispatch:  # Allow manual triggering
+    # Runs on the 1st, 11th, and 21st of each month at 6 AM UTC (~every 10 days)
+    - cron: "0 6 1,11,21 * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write       # Create branches and commits
-  pull-requests: write  # Create pull requests
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
 
 jobs:
   sync-dependencies:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for better git operations
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: "1.25"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
-      - name: Configure Git
+      - name: Clone upstream and gather context
+        id: context
         run: |
+          set -euo pipefail
+
+          UPSTREAM_DIR="/tmp/longhabit"
+          git clone --quiet https://github.com/s-petr/longhabit.git "$UPSTREAM_DIR"
+
+          # Determine the last analyzed commit
+          TRACKER_FILE=".github/last-sync-commit"
+          if [ -f "$TRACKER_FILE" ] && [ -s "$TRACKER_FILE" ]; then
+            LAST_SHA=$(cat "$TRACKER_FILE" | tr -d '[:space:]')
+            echo "Last analyzed commit: $LAST_SHA"
+          else
+            # First run: analyze last 30 days
+            LAST_SHA=$(git -C "$UPSTREAM_DIR" log --since="30 days ago" --format="%H" --reverse | head -1)
+            if [ -z "$LAST_SHA" ]; then
+              echo "No upstream commits in last 30 days"
+              echo "has_new_commits=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            # Use the parent of the oldest commit so it's included in the range
+            LAST_SHA=$(git -C "$UPSTREAM_DIR" rev-parse "${LAST_SHA}^" 2>/dev/null || echo "")
+            if [ -z "$LAST_SHA" ]; then
+              LAST_SHA=""
+            fi
+            echo "First run: analyzing last 30 days of commits"
+          fi
+
+          LATEST_SHA=$(git -C "$UPSTREAM_DIR" rev-parse HEAD)
+          echo "latest_sha=$LATEST_SHA" >> "$GITHUB_OUTPUT"
+
+          # Check if there are new commits
+          if [ -n "$LAST_SHA" ] && [ "$LAST_SHA" = "$LATEST_SHA" ]; then
+            echo "No new upstream commits since last sync"
+            echo "has_new_commits=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "has_new_commits=true" >> "$GITHUB_OUTPUT"
+
+          # Get commit log since last analyzed SHA
+          if [ -n "$LAST_SHA" ]; then
+            COMMIT_LOG=$(git -C "$UPSTREAM_DIR" log --oneline "${LAST_SHA}..HEAD" 2>/dev/null || git -C "$UPSTREAM_DIR" log --oneline -20)
+            CHANGED_FILES=$(git -C "$UPSTREAM_DIR" diff --name-only "${LAST_SHA}..HEAD" 2>/dev/null || git -C "$UPSTREAM_DIR" diff --name-only HEAD~20..HEAD 2>/dev/null || echo "unable to determine")
+          else
+            COMMIT_LOG=$(git -C "$UPSTREAM_DIR" log --oneline -20)
+            CHANGED_FILES=$(git -C "$UPSTREAM_DIR" diff --name-only HEAD~20..HEAD 2>/dev/null || echo "unable to determine")
+          fi
+
+          # Save context to files that Claude can read
+          echo "$COMMIT_LOG" > /tmp/upstream-commits.txt
+          echo "$CHANGED_FILES" > /tmp/upstream-changed-files.txt
+          cp "$UPSTREAM_DIR/package.json" /tmp/upstream-package.json
+          cp "$UPSTREAM_DIR/backend/go.mod" /tmp/upstream-go.mod
+
+          echo "Upstream commits since last sync:"
+          echo "$COMMIT_LOG"
+          echo ""
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+      - name: Apply dependency updates with Claude
+        if: steps.context.outputs.has_new_commits == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          branch_name_template: "{{prefix}}sync/deps-{{timestamp}}"
+          prompt: |
+            You are a dependency sync bot. Your job is to compare upstream dependency files from the s-petr/longhabit repository with the local ones and apply ONLY overlapping version bumps.
+
+            ## Instructions
+
+            ### Step 1: Read all dependency files
+
+            Read these upstream files (saved during context gathering):
+            - `/tmp/upstream-package.json` — upstream NPM dependencies
+            - `/tmp/upstream-go.mod` — upstream Go dependencies
+            - `/tmp/upstream-commits.txt` — list of new upstream commits
+            - `/tmp/upstream-changed-files.txt` — files changed in upstream
+
+            Read these local files:
+            - `package.json` — local NPM dependencies
+            - `backend/go.mod` — local Go dependencies
+
+            ### Step 2: Compare and apply ONLY overlapping dependency version bumps
+
+            **Rules — you MUST follow these exactly:**
+
+            1. **Only bump EXISTING packages** — if a package exists in upstream `package.json` or `go.mod` but NOT in the local file, DO NOT add it. Ignore it completely.
+            2. **Only compare dependency version sections** — in `package.json`, only look at `dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`, `overrides`, and `resolutions`. DO NOT touch `name`, `version`, `description`, `author`, `scripts`, `repository`, `homepage`, `license`, `type`, or any other non-dependency fields.
+            3. **Preserve the Go module path** — the first line of `backend/go.mod` must remain `module github.com/mauriceLC92/saas-template`. Do NOT change it to the upstream module path.
+            4. **Preserve Go version** — do not change the `go` directive version unless the upstream version is higher.
+            5. **Only bump direct dependencies in go.mod** — look at the first `require (...)` block. Do NOT modify indirect dependencies (the second `require` block with `// indirect` comments). `go mod tidy` will handle those.
+            6. **If a local package has a HIGHER version than upstream, keep the local version** — only bump when upstream is newer.
+
+            ### Step 3: Regenerate lockfiles
+
+            If you made changes to `package.json`, run: `npm install`
+            If you made changes to `backend/go.mod`, run: `cd backend && go mod tidy`
+
+            ### Step 4: Determine if a PR is needed
+
+            - If NO dependency versions were changed (all local versions already match or are newer than upstream), output a message saying "No dependency changes needed — all versions are up to date." and DO NOT create any commits or PR.
+            - If changes were made, commit them and the action will create a PR automatically.
+
+            ### Step 5: PR description (only if changes were made)
+
+            Use this format for the commit message: `chore: sync dependencies from longhabit`
+
+            Use this exact format for the PR body:
+
+            ## Dependency Sync from longhabit
+
+            Automated dependency version sync from [s-petr/longhabit](https://github.com/s-petr/longhabit).
+
+            ### NPM Dependency Changes
+
+            | Package | Old Version | New Version | Section |
+            |---------|-------------|-------------|---------|
+            | (list each changed package) | (old) | (new) | dependencies/devDependencies |
+
+            _(or "No NPM dependency changes" if none)_
+
+            ### Go Dependency Changes
+
+            | Module | Old Version | New Version |
+            |--------|-------------|-------------|
+            | (list each changed module) | (old) | (new) |
+
+            _(or "No Go dependency changes" if none)_
+
+            ### Other Upstream Changes (not applied)
+
+            The following non-dependency files were also changed upstream but are NOT included in this PR (read /tmp/upstream-changed-files.txt for the full list):
+            - (list files that are NOT package.json, package-lock.json, go.mod, or go.sum)
+
+            Review the [upstream commits](https://github.com/s-petr/longhabit/commits/main) if you want to manually apply any of these changes.
+
+            ### Testing Checklist
+
+            - [ ] `npm run build:client` — frontend builds
+            - [ ] `npm run build:server` — backend builds
+            - [ ] `npm run lint` — type checking and linting pass
+            - [ ] `npm run dev` — dev servers start without errors
+
+            ### Important Reminders
+            - Do NOT add new packages that don't already exist locally
+            - Do NOT modify anything outside of dependency sections
+            - Do NOT change the Go module path
+            - If there are zero version differences, do not create a PR
+          claude_args: |
+            --model claude-haiku-4-5-20251001
+            --max-turns 15
+            --allowedTools Read,Write,Edit,Bash(npm install),Bash(cd backend && go mod tidy),Bash(gh pr list:*),Bash(git:*)
+
+      - name: Update sync tracker
+        if: steps.context.outputs.has_new_commits == 'true'
+        run: |
+          LATEST_SHA="${{ steps.context.outputs.latest_sha }}"
+          TRACKER_FILE=".github/last-sync-commit"
+
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Check for existing sync PR
-        id: check-pr
-        run: |
-          # Check if there's already an open PR with the sync label
-          EXISTING_PR=$(gh pr list --label "dependencies" --label "automated" --state open --json number --jq '.[0].number')
-          if [ -n "$EXISTING_PR" ]; then
-            EXISTING_BRANCH=$(gh pr view "$EXISTING_PR" --json headRefName --jq '.headRefName')
-            echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "existing_branch=$EXISTING_BRANCH" >> $GITHUB_OUTPUT
-            echo "Found existing PR #$EXISTING_PR on branch $EXISTING_BRANCH"
+          git stash --include-untracked || true
+          git checkout master
+          git pull origin master
+
+          echo "$LATEST_SHA" > "$TRACKER_FILE"
+          git add "$TRACKER_FILE"
+
+          if git diff --cached --quiet; then
+            echo "Tracker file unchanged"
           else
-            echo "No existing PR found"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Prepare sync branch
-        id: branch
-        run: |
-          DEFAULT_BASE="origin/master"
-
-          if [ -n "${{ steps.check-pr.outputs.existing_branch }}" ]; then
-            BRANCH_NAME="${{ steps.check-pr.outputs.existing_branch }}"
-            git fetch origin "$BRANCH_NAME" || true
-
-            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH_NAME"; then
-              git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
-            else
-              git checkout -B "$BRANCH_NAME" "$DEFAULT_BASE"
-            fi
-          else
-            BRANCH_NAME="sync/dependencies-$(date +%Y-%m-%d)"
-            git fetch origin
-            git checkout -B "$BRANCH_NAME" "$DEFAULT_BASE"
-          fi
-
-          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-
-      - name: Sync dependencies from longhabit
-        id: sync
-        run: |
-          chmod +x .github/scripts/sync-dependencies.sh
-          .github/scripts/sync-dependencies.sh
-        env:
-          LONGHABIT_REPO: s-petr/longhabit
-          LONGHABIT_BRANCH: main
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Update Go dependencies
-        if: steps.sync.outputs.has_changes == 'true' && contains(steps.sync.outputs.changed_files, 'backend/go.mod')
-        run: |
-          cd backend
-          go mod tidy
-          cd ..
-
-      - name: Update NPM dependencies
-        if: steps.sync.outputs.has_changes == 'true' && contains(steps.sync.outputs.changed_files, 'package.json')
-        run: |
-          npm install
-
-      - name: Create branch and commit changes
-        if: steps.sync.outputs.has_changes == 'true'
-        id: commit
-        run: |
-          BRANCH_NAME="${{ steps.branch.outputs.branch_name }}"
-
-          # Stage all changes
-          git add -A
-
-          # Commit with detailed message
-          COMMIT_FILES=$(echo "${{ steps.sync.outputs.changed_files }}" | tr ',' '\n' | sed 's/^/- /')
-          git commit \
-            -m "chore: sync dependencies from longhabit" \
-            -m "Automated dependency sync from upstream repository:" \
-            -m "https://github.com/s-petr/longhabit" \
-            -m "Files updated:" \
-            -m "$COMMIT_FILES" \
-            -m "This PR includes dependency updates for both Go backend and NPM frontend packages." \
-            -m "Lockfiles (go.sum, package-lock.json) have been automatically regenerated." \
-            -m "Generated by GitHub Actions"
-
-          # Push branch
-          git push --force-with-lease origin "$BRANCH_NAME"
-
-      - name: Generate PR description
-        if: steps.sync.outputs.has_changes == 'true'
-        id: pr-description
-        run: |
-          chmod +x .github/scripts/generate-pr-description.sh
-          .github/scripts/generate-pr-description.sh "${{ steps.sync.outputs.changed_files }}"
-
-      - name: Ensure PR labels exist
-        if: steps.sync.outputs.has_changes == 'true'
-        run: |
-          LABELS=("dependencies" "automated")
-          for label in "${LABELS[@]}"; do
-            if ! gh label list --json name --jq '.[].name' | grep -Fx "$label" >/dev/null; then
-              gh label create "$label" --color "0e8a16" --description "Automated dependency sync"
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Create Pull Request
-        if: steps.sync.outputs.has_changes == 'true' && steps.check-pr.outputs.existing_pr == ''
-        id: create-pr
-        run: |
-          PR_URL=$(gh pr create \
-            --title "chore: sync dependencies from longhabit ($(date +%Y-%m-%d))" \
-            --body-file .github/pr-description.md \
-            --label "dependencies" \
-            --label "automated" \
-            --base master)
-
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          echo "✅ Created PR: $PR_URL"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Update existing Pull Request
-        if: steps.sync.outputs.has_changes == 'true' && steps.check-pr.outputs.existing_pr != ''
-        run: |
-          gh pr edit ${{ steps.check-pr.outputs.existing_pr }} \
-            --body-file .github/pr-description.md
-
-          echo "✅ Updated existing PR #${{ steps.check-pr.outputs.existing_pr }}"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Summary
-        run: |
-          if [ "${{ steps.sync.outputs.has_changes }}" == "true" ]; then
-            echo "✅ Dependency sync completed successfully"
-            echo "Changed files: ${{ steps.sync.outputs.changed_files }}"
-            if [ -n "${{ steps.create-pr.outputs.pr_url }}" ]; then
-              echo "PR created: ${{ steps.create-pr.outputs.pr_url }}"
-            elif [ -n "${{ steps.check-pr.outputs.existing_pr }}" ]; then
-              echo "Existing PR updated: #${{ steps.check-pr.outputs.existing_pr }}"
-            fi
-          else
-            echo "ℹ️ No dependency changes detected - all files are in sync"
+            git commit -m "chore: update dependency sync tracker to ${LATEST_SHA:0:7}"
+            git push origin master
+            echo "Updated tracker to $LATEST_SHA"
           fi
