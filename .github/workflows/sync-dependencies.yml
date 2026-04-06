@@ -19,17 +19,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25"
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "24"
 
@@ -88,6 +88,7 @@ jobs:
           echo "$CHANGED_FILES" > /tmp/upstream-changed-files.txt
           cp "$UPSTREAM_DIR/package.json" /tmp/upstream-package.json
           cp "$UPSTREAM_DIR/backend/go.mod" /tmp/upstream-go.mod
+          cp "$UPSTREAM_DIR/vite.config.ts" /tmp/upstream-vite.config.ts
 
           echo "Upstream commits since last sync:"
           echo "$COMMIT_LOG"
@@ -129,6 +130,20 @@ jobs:
             5. **Only bump direct dependencies in go.mod** — look at the first `require (...)` block. Do NOT modify indirect dependencies (the second `require` block with `// indirect` comments). `go mod tidy` will handle those.
             6. **If a local package has a HIGHER version than upstream, keep the local version** — only bump when upstream is newer.
 
+            ### Step 2b: Sync vite.config.ts
+
+            Read `/tmp/upstream-vite.config.ts` and local `vite.config.ts`.
+
+            Apply upstream structural changes (e.g. plugin API changes, build option renames like `rollupOptions` → `rolldownOptions`, new compiler setup) **surgically** — do NOT wholesale copy the file.
+
+            You MUST preserve these local-specific values exactly as-is:
+            - `outDir: './backend/dist'`
+            - `publicDir: './frontend/public'`
+            - The `server.proxy` block (including `VITE_BACKEND_URL` env var logic)
+            - The path alias: `'@': path.resolve(__dirname, './frontend/src')`
+
+            If the files are already equivalent in intent, skip this step entirely.
+
             ### Step 3: Regenerate lockfiles
 
             If you made changes to `package.json`, run: `npm install`
@@ -165,6 +180,14 @@ jobs:
 
             _(or "No Go dependency changes" if none)_
 
+            ### Config File Changes
+
+            | File | Change Summary |
+            |------|----------------|
+            | (e.g. vite.config.ts) | (brief description of what changed) |
+
+            _(or "No config file changes" if none)_
+
             ### Other Upstream Changes (not applied)
 
             The following non-dependency files were also changed upstream but are NOT included in this PR (read /tmp/upstream-changed-files.txt for the full list):
@@ -181,9 +204,10 @@ jobs:
 
             ### Important Reminders
             - Do NOT add new packages that don't already exist locally
-            - Do NOT modify anything outside of dependency sections
+            - Do NOT modify anything outside of dependency sections and vite.config.ts
             - Do NOT change the Go module path
-            - If there are zero version differences, do not create a PR
+            - When editing vite.config.ts, preserve outDir, publicDir, server proxy, and path alias
+            - If there are zero version differences and no config changes, do not create a PR
           claude_args: |
             --model claude-haiku-4-5-20251001
             --max-turns 15
