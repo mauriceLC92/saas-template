@@ -1,10 +1,10 @@
 module github.com/mauriceLC92/saas-template
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/alitto/pond/v2 v2.7.1
-	github.com/pocketbase/pocketbase v0.38.2
+	github.com/pocketbase/pocketbase v0.39.4
 )
 
 require (
